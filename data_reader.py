@@ -8,15 +8,21 @@
 import os
 import nibabel as nib
 
+# training_folder = 'MICCAI_BraTS_2018_Data_Training'
 hgg_folder = 'MICCAI_BraTS_2018_Data_Training/HGG'
 lgg_folder = 'MICCAI_BraTS_2018_Data_Training/LGG'
 
-hgg_files = os.listdir(hgg_folder)
-hgg_volumes = []
-for hgg_file in hgg_files:
-    hgg_volume = os.listdir(os.path.join(hgg_folder, hgg_file))
-    for hgg_data in hgg_volume:
-        hgg = os.path.join(hgg_folder, hgg_file, hgg_data)
-        hgg_volumes.append(hgg)
 
-print(hgg_volumes)
+def load_path(folder):
+    volumes = []
+    files = os.listdir(folder)
+    for file in files:
+        volume = os.listdir(os.path.join(folder, file))
+        for data in volume:
+            data_path = os.path.join(folder, file, data)
+            volumes.append(data_path)
+    return volumes
+
+
+hgg_volumes = load_path(hgg_folder)
+lgg_volumes = load_path(lgg_folder)
