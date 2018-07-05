@@ -3,7 +3,7 @@
 # @Date    : 2018/7/4
 # @Author  : Bin LIN
 # Copyright (c) 2017-2018 University of St. Andrews, UK. All rights reserved
-#
+# Code below is reusing the
 
 from keras.models import Model
 from keras.layers import Conv2D, MaxPooling2D, Input, ZeroPadding2D, Dropout, Conv2DTranspose, Cropping2D, Add
@@ -75,4 +75,3 @@ def vgg_model():
     # Final up-sampling and cropping
     upsample = Conv2DTranspose(21, (16, 16), strides=8, name='upsample', use_bias=False)(score_final)
     upscore = Cropping2D(((31, 37), (31, 37)))(upsample)
-    
