@@ -7,22 +7,50 @@
 
 import os
 import nibabel as nib
+import matplotlib.pyplot as plt
 
-# training_folder = 'MICCAI_BraTS_2018_Data_Training'
-hgg_folder = 'MICCAI_BraTS_2018_Data_Training/HGG'
-lgg_folder = 'MICCAI_BraTS_2018_Data_Training/LGG'
+data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
 
 
 def load_path(folder):
     volumes = []
-    files = os.listdir(folder)
-    for file in files:
-        volume = os.listdir(os.path.join(folder, file))
-        for data in volume:
-            data_path = os.path.join(folder, file, data)
-            volumes.append(data_path)
+    for grade in folder:
+        files = os.listdir(grade)
+        for file in files:
+            volume = os.listdir(os.path.join(grade, file))
+            for data in volume:
+                data_path = os.path.join(grade, file, data)
+                volumes.append(data_path)
     return volumes
 
 
-hgg_volumes = load_path(hgg_folder)
-lgg_volumes = load_path(lgg_folder)
+whole_volumes = load_path(data_folder)
+
+seg = []
+flair = []
+t1 = []
+t1ce = []
+t2 = []
+scans = []
+scans_dic = {}
+for v in whole_volumes:
+    if 'seg.nii' not in v:
+        scans.append(v)
+    if 'seg.nii' in v:
+        seg.append(v)
+    elif 'flair.nii' in v:
+        flair.append(v)
+    elif 't1.nii' in v:
+        t1.append(v)
+    elif 't1ce.nii' in v:
+        t1ce.append(v)
+    elif 't2.nii' in v:
+        t2.append(v)
+for s in seg:
+    scans_dic[s] = []
+    for scan in scans:
+        if s[:-11] in scan:
+            scans_dic[s].append(scan)
+
+print(scans_dic)
+print(len(scans_dic))
