@@ -7,6 +7,7 @@
 
 import os
 import nibabel as nib
+import pandas as pd
 import matplotlib.pyplot as plt
 
 data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
@@ -54,3 +55,16 @@ for s in seg:
 
 print(scans_dic)
 print(len(scans_dic))
+
+core = nib.load(t1ce[0])
+tumor = core.get_data()
+for a in tumor:
+    plt.imshow(a,cmap='gray')
+    plt.show()
+exit(0)
+gt = []
+for key in scans_dic:
+    d = nib.load(key)
+    sc = d.get_data()
+    gt.append(sc)
+
