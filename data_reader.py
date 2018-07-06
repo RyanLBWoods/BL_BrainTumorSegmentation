@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
 
 
-def load_path(folder):
+def load_all_volumes(folder):
     volumes = []
     for grade in folder:
         files = os.listdir(grade)
@@ -25,7 +25,7 @@ def load_path(folder):
     return volumes
 
 
-whole_volumes = load_path(data_folder)
+whole_volumes = load_all_volumes(data_folder)
 
 seg = []
 flair = []
@@ -47,24 +47,20 @@ for v in whole_volumes:
         t1ce.append(v)
     elif 't2.nii' in v:
         t2.append(v)
+
+# Build a dictionary in the format of {seg:[flair, t1, t1ce, t2]}
 for s in seg:
-    scans_dic[s] = []
-    for scan in scans:
-        if s[:-11] in scan:
-            scans_dic[s].append(scan)
+    if s not in scans_dic:
+        scans_dic[s] = []
+        for scan in scans:
+            if s[:-11] in scan:
+                scans_dic[s].append(scan)
 
 print(scans_dic)
-print(len(scans_dic))
-
-core = nib.load(t1ce[0])
-tumor = core.get_data()
-for a in tumor:
-    plt.imshow(a,cmap='gray')
-    plt.show()
-exit(0)
-gt = []
+ground_truth = []
+modals = []
+segment_dic = {}
 for key in scans_dic:
-    d = nib.load(key)
-    sc = d.get_data()
-    gt.append(sc)
+    gt = nib.load(key).get_data()
+    ground_truth.append(gt)
 
