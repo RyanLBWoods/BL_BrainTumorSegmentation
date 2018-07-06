@@ -69,16 +69,14 @@ def load_scan_data(input_queue):
     label_imgs = []
     for scan in scans_list:
         for sc in scan:
-            scan_imgs.append(nib.load(sc).get_data())
+            scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
     for label in label_list:
-        label_imgs.append(nib.load(label).get_data())
-    print(scan_imgs[0].shape)
-    exit(0)
+        label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
     scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
     label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
 
-    # print(scan_img)
-    # print(label_img)
+    print(scan_img)
+    print(label_img)
 
 
 label = list(dic.keys())
