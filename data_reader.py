@@ -26,7 +26,7 @@ def load_scans_list(folder):
 
 
 def load_scans_dic(data_dir):
-    data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
+    # data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
 
     scans_list = load_scans_list(data_dir)
 
