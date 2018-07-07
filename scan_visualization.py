@@ -9,22 +9,25 @@ import os
 import nibabel as nib
 import tensorflow as tf
 import numpy as np
+
+
 # import matplotlib.pyplot as plt
+
+def load_scans_list(folder):
+    all_list = []
+    grades = ['HGG', 'LGG']
+    for grade in grades:
+        files = os.listdir(os.path.join(folder, grade))
+        for file in files:
+            volume = os.listdir(os.path.join(folder, grade, file))
+            for data in volume:
+                data_path = os.path.join(folder, grade, file, data)
+                all_list.append(data_path)
+    return all_list
 
 
 def load_scans_dic():
-    data_folder = ['MICCAI_BraTS_2018_Data_Training/HGG', 'MICCAI_BraTS_2018_Data_Training/LGG']
-
-    def load_scans_list(folder):
-        all_list = []
-        for grade in folder:
-            files = os.listdir(grade)
-            for file in files:
-                volume = os.listdir(os.path.join(grade, file))
-                for data in volume:
-                    data_path = os.path.join(grade, file, data)
-                    all_list.append(data_path)
-        return all_list
+    data_folder = 'MICCAI_BraTS_2018_Data_Training'
 
     scans_list = load_scans_list(data_folder)
 
