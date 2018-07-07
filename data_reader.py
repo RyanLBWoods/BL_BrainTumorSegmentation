@@ -68,12 +68,13 @@ def load_scan_data(input_queue, input_size, random_scale):
     label_imgs = []
     for scan in scans_list:
         for sc in scan:
-            scan_imgs.append(nib.load(sc).get_data())
+            scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
     for label in label_list:
-        label_imgs.append(nib.load(label).get_data())
+        label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
 
-    scan_img = tf.convert_to_tensor(scan_imgs)
-    label_img = tf.convert_to_tensor(label_imgs)
+    scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
+    label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
+    
     return scan_img, label_img
 
 
