@@ -9,7 +9,7 @@ from network import Network
 import tensorflow as tf
 
 
-class ResNet(Network):
+class ResNetModel(Network):
     def setup(self, is_training):
         '''Network definition.
 
