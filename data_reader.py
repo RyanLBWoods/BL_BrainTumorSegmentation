@@ -40,16 +40,16 @@ def load_scans_dic(data_dir):
     for vol in scans_list:
         if 'seg.nii' not in vol:
             scans.append(vol)
-        if 'seg.nii' in vol:
+        else:
             seg.append(vol)
-        elif 'flair.nii' in vol:
-            flair.append(vol)
-        elif 't1.nii' in vol:
-            t1.append(vol)
-        elif 't1ce.nii' in vol:
-            t1ce.append(vol)
-        elif 't2.nii' in vol:
-            t2.append(vol)
+        # elif 'flair.nii' in vol:
+        #     flair.append(vol)
+        # elif 't1.nii' in vol:
+        #     t1.append(vol)
+        # elif 't1ce.nii' in vol:
+        #     t1ce.append(vol)
+        # elif 't2.nii' in vol:
+        #     t2.append(vol)
 
     # Build a dictionary in the format of {seg:[flair, t1, t1ce, t2]}
     for s in seg:
@@ -63,9 +63,9 @@ def load_scans_dic(data_dir):
     return scans_dic
 
 
-def load_scan_data(input_queue, input_size, random_scale):
-    scans_list = input_queue[0]
-    label_list = input_queue[1]
+def load_scan_data(mri_dict, input_size, random_scale):
+    scans_list = list(mri_dict.values())
+    label_list = list(mri_dict.keys())
     scan_imgs = []
     label_imgs = []
     for scan in scans_list:
@@ -86,14 +86,14 @@ class ScanReader(object):
         self.input_size = input_size
         self.coord = coord
 
-        self.scans_dic = load_scans_dic(self.data_dir)
+        self.mri_dic = load_scans_dic(self.data_dir)
         # self.scans_list = tf.convert_to_tensor(list(self.scans_dic.values()), dtype=tf.string)
-        self.scans_list = list(self.scans_dic.values())
-        self.label_list = list(self.scans_dic.keys())
+        self.scans_list = list(self.mri_dic.values())
+        self.label_list = list(self.mri_dic.keys())
         # self.label_list = tf.convert_to_tensor(list(self.scans_dic.keys()), dtype=tf.string)
         # self.queue = tf.train.slice_input_producer([self.scans_list, self.label_list], shuffle=input_size is not None)
         self.queue = [self.scans_list, self.label_list]
-        self.scan_img, self.label_img = load_scan_data(self.queue, self.input_size, random_scale)
+        self.scan_img, self.label_img = load_scan_data(self.mri_dic, self.input_size, random_scale)
 
     def dequeue(self, num_elements):
         scan_batch, label_batch = tf.train.batch([self.scan_img, self.label_img], num_elements)
