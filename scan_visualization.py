@@ -41,16 +41,16 @@ def load_scans_dic():
     for vol in scans_list:
         if 'seg.nii' not in vol:
             scans.append(vol)
-        if 'seg.nii' in vol:
+        else:
             seg.append(vol)
-        elif 'flair.nii' in vol:
-            flair.append(vol)
-        elif 't1.nii' in vol:
-            t1.append(vol)
-        elif 't1ce.nii' in vol:
-            t1ce.append(vol)
-        elif 't2.nii' in vol:
-            t2.append(vol)
+        # elif 'flair.nii' in vol:
+        #     flair.append(vol)
+        # elif 't1.nii' in vol:
+        #     t1.append(vol)
+        # elif 't1ce.nii' in vol:
+        #     t1ce.append(vol)
+        # elif 't2.nii' in vol:
+        #     t2.append(vol)
 
     # Build a dictionary in the format of {seg:[flair, t1, t1ce, t2]}
     for s in seg:
@@ -65,27 +65,41 @@ def load_scans_dic():
 dic = load_scans_dic()
 
 
-def load_scan_data(input_queue):
-    scans_list = input_queue[0]
-    label_list = input_queue[1]
+def load_scan_data(dict):
+    # scans_list = input_queue[0]
+    # scans_list = list(dict.values())
+    # label_list = list(dict.keys())
+    # label_list = input_queue[1]
     scan_imgs = []
+    scan_tensor = []
     label_imgs = []
-    for scan in scans_list:
-        for sc in scan:
-            scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
-    for label in label_list:
+    for label in dict:
         label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
-    scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
+        for scan in dict[label]:
+            scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
+        scan_tensor.append(scan_imgs)
+        scan_imgs = []
+
+    # for scan in scans_list:
+    #     for sc in scan:
+    #         scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
+    # for label in label_list:
+    #     label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
+
+    print(scan_tensor)
+    print(label_imgs)
+
+    scan_img = tf.cast(tf.convert_to_tensor(scan_tensor), dtype=tf.float32)
     label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
 
     print(scan_img)
     print(label_img)
 
 
-label = list(dic.keys())
-scans = list(dic.values())
-queue = [scans, label]
+# label = list(dic.keys())
+# scans = list(dic.values())
+# queue = [scans, label]
 
 # queue = tf.train.slice_input_producer([scans, label])
 
-load_scan_data(queue)
+load_scan_data(dic)
