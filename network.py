@@ -6,6 +6,7 @@
 #
 
 import numpy as np
+import six
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
@@ -13,8 +14,7 @@ DEFAULT_PADDING = 'SAME'
 
 
 def layer(op):
-    '''Decorator for composable network layers.'''
-
+    """Decorator for composable network layers."""
     def layer_decorated(self, *args, **kwargs):
         # Automatically set a name if not provided.
         name = kwargs.setdefault('name', self.get_unique_name(op.__name__))
@@ -55,15 +55,15 @@ class Network(object):
         self.setup(is_training)
 
     def setup(self, is_training):
-        '''Construct the network. '''
+        """Construct the network. """
         raise NotImplementedError('Must be implemented by the subclass.')
 
     def load(self, data_path, session, ignore_missing=False):
-        '''Load network weights.
+        """Load network weights.
         data_path: The path to the numpy-serialized network weights
         session: The current TensorFlow session
         ignore_missing: If true, serialized weights for missing layers are ignored.
-        '''
+        """
         data_dict = np.load(data_path).item()
         for op_name in data_dict:
             with tf.variable_scope(op_name, reuse=True):
@@ -76,13 +76,13 @@ class Network(object):
                             raise
 
     def feed(self, *args):
-        '''Set the input(s) for the next operation by replacing the terminal nodes.
+        """Set the input(s) for the next operation by replacing the terminal nodes.
         The arguments can be either layer names or the actual layers.
-        '''
+        """
         assert len(args) != 0
         self.terminals = []
         for fed_layer in args:
-            if isinstance(fed_layer, basestring):
+            if isinstance(fed_layer, str):
                 try:
                     fed_layer = self.layers[fed_layer]
                 except KeyError:
@@ -91,22 +91,22 @@ class Network(object):
         return self
 
     def get_output(self):
-        '''Returns the current network output.'''
+        """Returns the current network output."""
         return self.terminals[-1]
 
     def get_unique_name(self, prefix):
-        '''Returns an index-suffixed unique name for the given prefix.
+        """Returns an index-suffixed unique name for the given prefix.
         This is used for auto-generating layer names based on the type-prefix.
-        '''
+        """
         ident = sum(t.startswith(prefix) for t, _ in self.layers.items()) + 1
         return '%s_%d' % (prefix, ident)
 
     def make_var(self, name, shape):
-        '''Creates a new TensorFlow variable.'''
+        """Creates a new TensorFlow variable."""
         return tf.get_variable(name, shape, trainable=self.trainable)
 
     def validate_padding(self, padding):
-        '''Verifies that the padding is one of the supported ones.'''
+        """Verifies that the padding is one of the supported ones."""
         assert padding in ('SAME', 'VALID')
 
     @layer
@@ -253,7 +253,7 @@ class Network(object):
 
     @layer
     def softmax(self, input, name):
-        input_shape = map(lambda v: v.value, input.get_shape())
+        input_shape = list(map(lambda v: v.value, input.get_shape()))
         if len(input_shape) > 2:
             # For certain models (like NiN), the singleton spatial dimensions
             # need to be explicitly squeezed, since they're not broadcast-able
