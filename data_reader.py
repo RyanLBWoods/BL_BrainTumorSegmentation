@@ -68,9 +68,12 @@ def load_scan_data(mri_dict, input_size, random_scale):
     label_list = list(mri_dict.keys())
     scan_imgs = []
     label_imgs = []
+    scan_tensor = []
     for scan in scans_list:
         for sc in scan:
             scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
+            scan_tensor.append(scan_imgs)
+        scan_imgs = []
     for label in label_list:
         label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
 
