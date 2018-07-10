@@ -80,6 +80,9 @@ def main():
         scan_reader = ScanReader(args.data_dir, input_size, args.random_scale, coord)
         scan_batch, label_batch = scan_reader.dequeue(args.batch_size)
 
+        print(scan_batch)
+        print(label_batch)
+    exit(0)
     # Build neural net
     net = ResNetModel({'data': scan_batch}, is_training=args.is_training)
 

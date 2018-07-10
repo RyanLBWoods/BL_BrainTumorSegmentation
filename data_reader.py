@@ -9,7 +9,7 @@ import os
 import nibabel as nib
 import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def load_scans_list(folder):
@@ -64,23 +64,33 @@ def load_scans_dic(data_dir):
 
 
 def load_scan_data(mri_dict, input_size, random_scale):
-    scans_list = list(mri_dict.values())
-    label_list = list(mri_dict.keys())
+    # scans_list = list(mri_dict.values())
+    # label_list = list(mri_dict.keys())
     scan_imgs = []
     label_imgs = []
     scan_tensor = []
-    for scan in scans_list:
-        for sc in scan:
-            scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
-            scan_tensor.append(scan_imgs)
-        scan_imgs = []
-    for label in label_list:
+    for label in mri_dict:
         label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
+        for scan in mri_dict[label]:
+            scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
+        scan_tensor.append(scan_imgs)
+        scan_imgs = []
+    # for scan in scans_list:
+    #     for sc in scan:
+    #         scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
+    #         scan_tensor.append(scan_imgs)
+    #     scan_imgs = []
+    # for label in label_list:
+    #     label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
 
-    scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
-    label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
-
-    return scan_img, label_img
+    # scan_img = tf.cast(tf.convert_to_tensor(scan_tensor), dtype=tf.float32)
+    # label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
+    img_tensor = tf.convert_to_tensor(scan_tensor, dtype=tf.float32)
+    label_tensor = tf.convert_to_tensor(label_imgs, dtype=tf.float32)
+    print(img_tensor)
+    print(label_tensor)
+    # return scan_img, label_img
+    return img_tensor, label_tensor
 
 
 class ScanReader(object):
