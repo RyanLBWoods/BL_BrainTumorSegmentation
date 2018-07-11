@@ -14,6 +14,7 @@ import time
 import tensorflow as tf
 import numpy as np
 
+from ResNet101 import resnet101_model
 from ResNet import ResNetModel
 from data_reader import ScanReader
 from utils import decode_labels, prepare_label, inverse_preprocess
@@ -78,35 +79,35 @@ def main():
     # Load data reader
     with tf.name_scope('create_inputs'):
         scan_reader = ScanReader(args.data_dir, input_size, args.random_scale, coord)
-        scan_batch, label_batch = scan_reader.dequeue(args.batch_size)
+        scans, labels = scan_reader.scan_img, scan_reader.label_img
 
-        print(scan_batch)
-        print(label_batch)
-    exit(0)
+        print(scans)
+        print(labels)
     # Build neural net
-    net = ResNetModel({'data': scan_batch}, is_training=args.is_training)
-
+    net = ResNetModel({'data': scans}, is_training=args.is_training)
+    print(net)
+    exit(0)
     # Predictions
     output = net.layers['fc_voc12']
     restore_var = tf.global_variables()
     trainable = tf.trainable_variables()
 
     prediction = tf.reshape(output, [-1, n_classes])
-    label_proc = prepare_label(label_batch, tf.pack(output.get_shape()[1: 3, ]))
+    label_proc = prepare_label(labels, tf.pack(output.get_shape()[1: 3, ]))
     gt = tf.reshape(label_proc, [-1, n_classes])
 
     # Pixel-wise softmax loss
-    loss = tf.nn.softmax_cross_entropy_with_logits(output, tf.shape(scan_batch)[1:3, ])
+    loss = tf.nn.softmax_cross_entropy_with_logits(output, tf.shape(scans)[1:3, ])
     reduced_loss = tf.reduce_mean(loss)
 
     # Process predictions
-    output_up = tf.image.resize_bilinear(output, tf.shape(scan_batch)[1:3, ])
+    output_up = tf.image.resize_bilinear(output, tf.shape(scans)[1:3, ])
     output_up = tf.argmax(output_up, dimension=1)
     pred = tf.expand_dims(output_up, dim=1)
 
     # Image summary
-    scans_summary = tf.py_func(inverse_preprocess, [scan_batch, args.save_num_images], tf.uint8)
-    labels_summary = tf.py_func(decode_labels, [label_batch, args.save_num_images], tf.uint8)
+    scans_summary = tf.py_func(inverse_preprocess, [scans, args.save_num_images], tf.uint8)
+    labels_summary = tf.py_func(decode_labels, [labels, args.save_num_images], tf.uint8)
     preds_summary = tf.py_func(decode_labels, [pred, args.save_num_images], tf.uint8)
 
     total_summary = tf.summary.image('images', tf.concat(2, [scans_summary, labels_summary, preds_summary]),
@@ -142,7 +143,7 @@ def main():
 
         if step % args.save_pred_every == 0:
             loss_value, scans, labels, preds, summary, _ = sess.run(
-                [reduced_loss, scan_batch, label_batch, pred, total_summary, optim])
+                [reduced_loss, scans, labels, pred, total_summary, optim])
             summary_writer.add_summary(summary, step)
             save(saver, sess, args.snapshot_dir, step)
         else:
