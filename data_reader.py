@@ -7,7 +7,6 @@
 
 import os
 import nibabel as nib
-import random
 import numpy as np
 import tensorflow as tf
 # import matplotlib.pyplot as plt
@@ -17,6 +16,7 @@ def train_validation_split(data_dict):
     test_size = 0.3
     volume_num = len(data_dict)
     train_index = list(data_dict.keys())
+    np.random.shuffle(train_index)
     test_index = []
     test_num = int(volume_num * test_size)
     train = {}
