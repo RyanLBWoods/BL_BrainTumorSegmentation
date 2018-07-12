@@ -9,6 +9,8 @@ import os
 import nibabel as nib
 import numpy as np
 import tensorflow as tf
+
+
 # import matplotlib.pyplot as plt
 
 
@@ -46,7 +48,6 @@ def load_scans_list(folder):
 
 
 def load_scans_dic(data_dir):
-
     scans_list = load_scans_list(data_dir)
 
     seg = []
@@ -88,14 +89,14 @@ def load_scan_data(mri_dict, input_size, random_scale):
     scan_imgs = []
     label_imgs = []
     scan_img_list = []
-    for label in mri_dict:
-        # label_imgs.append(nib.load(label).get_data())
-        label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
-        for scan in mri_dict[label]:
-            # scan_imgs.append(nib.load(scan).get_data())
-            scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
-        scan_img_list.append(scan_imgs)
-        scan_imgs = []
+    # for label in mri_dict:
+    #     # label_imgs.append(nib.load(label).get_data())
+    #     label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
+    #     for scan in mri_dict[label]:
+    #         # scan_imgs.append(nib.load(scan).get_data())
+    #         scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
+    #     scan_img_list.append(scan_imgs)
+    #     scan_imgs = []
     # for scan in scans_list:
     #     for sc in scan:
     #         scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
@@ -107,7 +108,15 @@ def load_scan_data(mri_dict, input_size, random_scale):
     # scan_img = tf.cast(tf.convert_to_tensor(scan_tensor), dtype=tf.float32)
     # label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
 
-    scan_tensor = tf.convert_to_tensor(scan_img_list, dtype=tf.float32)
+    for label in mri_dict:
+        label_data = nib.load(label).get_data()
+        for data in label_data:
+            label_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
+        for scan in mri_dict[label]:
+            scan_data = nib.load(scan).get_data()
+            for data in scan_data:
+                scan_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
+    scan_tensor = tf.convert_to_tensor(scan_imgs, dtype=tf.float32)
     label_tensor = tf.convert_to_tensor(label_imgs, dtype=tf.float32)
     # return scan_img, label_img
     return scan_tensor, label_tensor

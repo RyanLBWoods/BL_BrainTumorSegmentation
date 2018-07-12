@@ -13,6 +13,29 @@ import numpy as np
 
 # import matplotlib.pyplot as plt
 
+
+def train_validation_split(data_dict):
+    test_size = 0.3
+    volume_num = len(data_dict)
+    train_index = list(data_dict.keys())
+    print(train_index)
+    np.random.shuffle(train_index)
+    print(train_index)
+    test_index = []
+    test_num = int(volume_num * test_size)
+    train = {}
+    test = {}
+    for i in range(test_num):
+        random_index = int(np.random.uniform(0, len(train_index)))
+        test_index.append(train_index[random_index])
+        del train_index[random_index]
+    for index in train_index:
+        train[index] = data_dict[index]
+    for index in test_index:
+        test[index] = data_dict[index]
+    return train, test
+
+
 def load_scans_list(folder):
     all_list = []
     grades = ['HGG', 'LGG']
@@ -62,9 +85,6 @@ def load_scans_dic():
     return scans_dic
 
 
-dic = load_scans_dic()
-
-
 def load_scan_data(dict):
     # scans_list = input_queue[0]
     # scans_list = list(dict.values())
@@ -74,32 +94,26 @@ def load_scan_data(dict):
     scan_tensor = []
     label_imgs = []
     for label in dict:
-        label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
+        label_data = nib.load(label).get_data()
+        for data in label_data:
+            label_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
         for scan in dict[label]:
-            scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
-        scan_tensor.append(scan_imgs)
-        scan_imgs = []
+            scan_data = nib.load(scan).get_data()
+            for data in scan_data:
+                scan_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
+        # scan_tensor.append(scan_imgs)
+        # scan_imgs = []
 
-    # for scan in scans_list:
-    #     for sc in scan:
-    #         scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
-    # for label in label_list:
-    #     label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
+    print(len(label_imgs))
+    print(len(scan_imgs))
 
-    print(scan_tensor)
-    print(label_imgs)
-
-    scan_img = tf.cast(tf.convert_to_tensor(scan_tensor), dtype=tf.float32)
+    scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
     label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
 
     print(scan_img)
     print(label_img)
 
 
-# label = list(dic.keys())
-# scans = list(dic.values())
-# queue = [scans, label]
-
-# queue = tf.train.slice_input_producer([scans, label])
-
-load_scan_data(dic)
+dic = load_scans_dic()
+train_dic, test_dic = train_validation_split(dic)
+load_scan_data(train_dic)

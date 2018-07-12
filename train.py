@@ -81,8 +81,9 @@ def main():
         scan_reader = ScanReader(args.data_dir, input_size, args.random_scale, coord)
         scans, labels = scan_reader.scan_img, scan_reader.label_img
 
-        print(scans)
-        print(labels)
+    print(scans)
+    print(labels)
+    exit(0)
     # Build neural net
     net = ResNetModel({'data': scans}, is_training=args.is_training)
     print(net)
@@ -92,9 +93,9 @@ def main():
     restore_var = tf.global_variables()
     trainable = tf.trainable_variables()
 
-    prediction = tf.reshape(output, [-1, n_classes])
-    label_proc = prepare_label(labels, tf.pack(output.get_shape()[1: 3, ]))
-    gt = tf.reshape(label_proc, [-1, n_classes])
+    # prediction = tf.reshape(output, [-1, n_classes])
+    # label_proc = prepare_label(labels, tf.pack(output.get_shape()[1: 3, ]))
+    # gt = tf.reshape(label_proc, [-1, n_classes])
 
     # Pixel-wise softmax loss
     loss = tf.nn.softmax_cross_entropy_with_logits(output, tf.shape(scans)[1:3, ])
