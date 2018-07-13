@@ -275,7 +275,7 @@ def resnet101_model(include_top=True, weights='imagenet', input_tensor=None, inp
     x = identity_block(x, 3, [64, 64, 256], stage=2, block='c')
 
     x = conv_block(x, 3, [128, 128, 512], stage=3, block='a')
-    for i in range(1, 3):
+    for i in range(1, 4):
         x = identity_block(x, 3, [128, 128, 512], stage=3, block='b' + str(i))
 
     x = conv_block(x, 3, [256, 256, 1024], stage=4, block='a')
