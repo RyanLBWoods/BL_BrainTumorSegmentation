@@ -111,18 +111,7 @@ class Network(object):
         assert padding in ('SAME', 'VALID')
 
     @layer
-    def conv(self,
-             input,
-             k_h,
-             k_w,
-             c_o,
-             s_h,
-             s_w,
-             name,
-             relu=True,
-             padding=DEFAULT_PADDING,
-             group=1,
-             biased=True):
+    def conv(self, input, k_h, k_w, c_o, s_h, s_w, name, relu=True, padding=DEFAULT_PADDING, group=1, biased=True):
         # Verify that the padding is acceptable
         self.validate_padding(padding)
         # Get the number of channels in the input
@@ -154,16 +143,7 @@ class Network(object):
             return output
 
     @layer
-    def atrous_conv(self,
-                    input,
-                    k_h,
-                    k_w,
-                    c_o,
-                    dilation,
-                    name,
-                    relu=True,
-                    padding=DEFAULT_PADDING,
-                    group=1,
+    def atrous_conv(self, input, k_h, k_w, c_o, dilation, name, relu=True, padding=DEFAULT_PADDING, group=1,
                     biased=True):
         # Verify that the padding is acceptable
         self.validate_padding(padding)
@@ -175,7 +155,7 @@ class Network(object):
         # Convolution for a given input and kernel
         convolve = lambda i, k: tf.nn.atrous_conv2d(i, k, dilation, padding=padding)
         with tf.variable_scope(name) as scope:
-            kernel = self.make_var('weights', shape=[k_h, k_w, c_i / group, c_o])
+            kernel = self.make_var('weights', shape=[k_h, k_w, int(c_i) / group, c_o])
             if group == 1:
                 # This is the common-case. Convolve the input without any further complications.
                 output = convolve(input, kernel)
