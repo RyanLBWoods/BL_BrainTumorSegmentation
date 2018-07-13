@@ -80,10 +80,13 @@ def main():
     with tf.name_scope('create_inputs'):
         scan_reader = ScanReader(args.data_dir, input_size, args.random_scale, coord)
         scans, labels = scan_reader.scan_img, scan_reader.label_img
-
-    print(scans)
-    print(labels)
-    exit(0)
+        print(scans)
+        print(labels)
+        scans = tf.reshape(scans, [192000, 240, 155, 1])
+        labels = tf.reshape(labels, [48000, 240, 155, 1])
+        print(scans)
+        print(labels)
+    # exit(0)
     # Build neural net
     net = ResNetModel({'data': scans}, is_training=args.is_training)
     print(net)
