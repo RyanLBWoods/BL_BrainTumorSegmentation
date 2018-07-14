@@ -150,7 +150,7 @@ def main():
             loss_value, scans, labels, preds, summary, _ = sess.run(
                 [reduced_loss, scans, labels, pred, optim])
             # summary_writer.add_summary(summary, step)
-            # save(saver, sess, args.snapshot_dir, step)
+            save(saver, sess, args.snapshot_dir, step)
         else:
             loss_value, _ = sess.run([reduced_loss, optim])
         duration = time.time() - start_time
