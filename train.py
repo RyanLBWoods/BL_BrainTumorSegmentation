@@ -90,7 +90,8 @@ def main():
     # Build neural net
     net = ResNetModel({'data': scans}, is_training=args.is_training)
     print(net)
-    exit(0)
+
+    # exit(0)
     # Predictions
     output = net.layers['fc_voc12']
     restore_var = tf.global_variables()
