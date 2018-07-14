@@ -111,9 +111,9 @@ def main():
     pred = tf.expand_dims(output_up, dim=1)
 
     # Image summary
-    scans_summary = tf.py_func(inverse_preprocess, [scans, args.save_num_images], tf.uint8)
-    labels_summary = tf.py_func(decode_labels, [labels, args.save_num_images], tf.uint8)
-    preds_summary = tf.py_func(decode_labels, [pred, args.save_num_images], tf.uint8)
+    # scans_summary = tf.py_func(inverse_preprocess, [scans, args.save_num_images], tf.uint8)
+    # labels_summary = tf.py_func(decode_labels, [labels, args.save_num_images], tf.uint8)
+    # preds_summary = tf.py_func(decode_labels, [pred, args.save_num_images], tf.uint8)
 
     total_summary = tf.summary.image('images', tf.concat(2, [scans_summary, labels_summary, preds_summary]),
                                      max_outputs=args.save_num_images)
