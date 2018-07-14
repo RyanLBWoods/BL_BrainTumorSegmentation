@@ -148,9 +148,9 @@ def main():
 
         if step % args.save_pred_every == 0:
             loss_value, scans, labels, preds, summary, _ = sess.run(
-                [reduced_loss, scans, labels, pred, total_summary, optim])
-            summary_writer.add_summary(summary, step)
-            save(saver, sess, args.snapshot_dir, step)
+                [reduced_loss, scans, labels, pred, optim])
+            # summary_writer.add_summary(summary, step)
+            # save(saver, sess, args.snapshot_dir, step)
         else:
             loss_value, _ = sess.run([reduced_loss, optim])
         duration = time.time() - start_time
