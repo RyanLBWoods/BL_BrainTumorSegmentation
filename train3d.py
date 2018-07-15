@@ -63,10 +63,13 @@ def main():
     # Reshape input to fit Tensorflow backend
     # [samples, depth, height, width, channel]
     scans = tf.reshape(scans, [200, 240, 240, 155, 4])
+    validation_scans = tf.reshape(validation_scans, [85, 240, 240, 155, 4])
     print(scans)
     print(labels)
     print(validation_scans)
     print(validation_labels)
+
+    # Build ResNet-101 model
     model = Resnet3DBuilder.build_resnet_101((240, 240, 155, 4), 1)
 
     # Train
