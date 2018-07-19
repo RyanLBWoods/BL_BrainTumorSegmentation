@@ -25,12 +25,6 @@ def load_scans_list(folder):
     return seg_list
 
 
-data_folder = 'MICCAI_BraTS_2018_Data_Training'
-
-gt_path = load_scans_list(data_folder)
-print(len(gt_path))
-
-
 def whole_tumor_label(gt_path_list):
     whole_tumor_label_list = []
     tumor_core_label_list = []
@@ -63,11 +57,17 @@ def whole_tumor_label(gt_path_list):
         whole_tumor_label_list.append(whole_tumor_gt)
         tumor_core_label_list.append(tumor_core_gt)
         cystic_label_list.append(cystic_gt)
-        break
+        
     whole_tumor_label_list = np.array(whole_tumor_label_list)
     tumor_core_label_list = np.array(tumor_core_label_list)
     cystic_label_list = np.array(cystic_label_list)
     return whole_tumor_label_list, tumor_core_label_list, cystic_label_list
 
 
+data_folder = 'MICCAI_BraTS_2018_Data_Training'
+gt_path = load_scans_list(data_folder)
 whole_tumor, tumor_core, cystic = whole_tumor_label(gt_path)
+
+np.save("whole_tumor.npy", whole_tumor)
+np.save("tumor_core.npy", whole_tumor)
+np.save("cystic.npy", whole_tumor)
