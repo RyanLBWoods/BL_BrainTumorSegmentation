@@ -51,7 +51,6 @@ def tumor_label(gt_path_list):
         whole_tumor_gt = []
         tumor_core_gt = []
         cystic_gt = []
-        
         for slice in seg_data:
             have_tumor = False
             have_core = False
