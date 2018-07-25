@@ -38,7 +38,6 @@ def tumor_label(gt_path_list):
     # whole_tumor_label_list = []
     # tumor_core_label_list = []
     # cystic_label_list = []
-    i = 0
     for path in gt_path_list:
         print("processing", path)
         # Create data dictionary
@@ -52,9 +51,7 @@ def tumor_label(gt_path_list):
         whole_tumor_gt = []
         tumor_core_gt = []
         cystic_gt = []
-        tumor_num = 0
-        core_num = 0
-        cystic_num = 0
+        
         for slice in seg_data:
             have_tumor = False
             have_core = False
@@ -77,19 +74,16 @@ def tumor_label(gt_path_list):
                                 have_cystic = True
                                 cystic_data[row][col] = 1
             if have_tumor:
-                tumor_num = tumor_num + 1
                 whole_tumor_tuple = (whole_tumor_data.tolist(), 1)
             else:
                 whole_tumor_tuple = (whole_tumor_data.tolist(), 0)
 
             if have_core:
-                core_num = core_num + 1
                 tumor_core_tuple = (tumor_core_data.tolist(), 1)
             else:
                 tumor_core_tuple = (tumor_core_data.tolist(), 0)
 
             if have_cystic:
-                cystic_num = cystic_num + 1
                 cystic_tuple = (cystic_data.tolist(), 1)
             else:
                 cystic_tuple = (cystic_data.tolist(), 0)
@@ -116,12 +110,6 @@ def tumor_label(gt_path_list):
         # whole_tumor_gt = []
         # tumor_core_gt = []
         # cystic_gt = []
-        i = i + 1
-        if i == 3:
-            break
-        print(tumor_num)
-        print(core_num)
-        print(cystic_num)
 
     whole_tumor_label_file.close()
     tumor_core_label_file.close()
