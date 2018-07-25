@@ -39,6 +39,7 @@ def load_scans_list(folder):
     all_list = []
     for grade in grades:
         files = os.listdir(os.path.join(folder, grade))
+        files.sort()
         for file in files:
             volume = os.listdir(os.path.join(folder, grade, file))
             for data in volume:
@@ -111,15 +112,20 @@ def load_scan_data(mri_dict):
     for label in mri_dict:
         label_data = nib.load(label).get_data()
         for data in label_data:
-            label_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
+            label_imgs.append(data)
+            # label_imgs.append(tf.convert_to_tensor(data))
         for scan in mri_dict[label]:
             scan_data = nib.load(scan).get_data()
             for data in scan_data:
-                scan_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
-    scan_tensor = tf.convert_to_tensor(scan_imgs, dtype=tf.float32)
-    label_tensor = tf.convert_to_tensor(label_imgs, dtype=tf.float32)
-    return scan_tensor, label_tensor
-    # return scan_img, label_img
+                # data = np.expand_dims(data, -1)
+                scan_imgs.append(data)
+                # scan_imgs.append(tf.convert_to_tensor(data))
+            # break
+        break
+    # scan_tensor = tf.convert_to_tensor(scan_imgs)
+    # label_tensor = tf.convert_to_tensor(label_imgs)
+    # return scan_tensor, label_tensor
+    return scan_imgs, label_imgs
 
 
 class ScanReader(object):
@@ -130,14 +136,14 @@ class ScanReader(object):
 
         self.mri_dic = load_scans_dic(self.data_dir)
         # self.scans_list = tf.convert_to_tensor(list(self.scans_dic.values()), dtype=tf.string)
-        self.train_dic, self.validation_dic = train_validation_split(self.mri_dic)
+        # self.train_dic, self.validation_dic = train_validation_split(self.mri_dic)
         # self.scans_list = list(self.train_dic.values())
         # self.label_list = list(self.train_dic.keys())
         # self.label_list = tf.convert_to_tensor(list(self.scans_dic.keys()), dtype=tf.string)
         # self.queue = tf.train.slice_input_producer([self.scans_list, self.label_list], shuffle=input_size is not None)
         # self.queue = [self.scans_list, self.label_list]
-        self.scan_img, self.label_img = load_scan_data(self.train_dic)
-        self.validation_scans, self.validation_labels = load_scan_data(self.validation_dic)
+        self.scan_img, self.label_img = load_scan_data(self.mri_dic)
+        # self.validation_scans, self.validation_labels = load_scan_data(self.validation_dic)
 
     def dequeue(self, num_elements):
         scan_batch, label_batch = tf.train.batch([self.scan_img, self.label_img], num_elements)
