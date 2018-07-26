@@ -11,11 +11,10 @@ import tensorflow as tf
 from ResNet2D import ResnetBuilder
 from vgg16 import vgg_model
 import vgg16
-import UNet
+# import UNet
 from load_data_2d import ScanReader
 from keras.utils import to_categorical
 import numpy as np
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 n_classes = 4
 BATCH_SIZE = 4
@@ -60,33 +59,20 @@ def load_data():
 
 
 def main():
-    # l = np.random.randint(10, size=(1000, 1))
-    # print(l)
-    # print(l.shape)
-    # one_hot_l = to_categorical(l, num_classes=10)
-    # print(one_hot_l)
-    # exit(0)
     # Build ResNet-101 model
+    print("Building Neural Net...")
     model = ResnetBuilder.build_resnet_101((240, 155, 1), 1)
     # unet = UNet.UNet3D((240, 240, 155, 1))
     # vgg_model = vgg16.vgg_model()
-    print("Model Built")
-
+    print("Input shape", model.input_shape)
+    print("Output shape", model.output_shape)
     # Compiling
+    print("Compiling...")
     # model.compile(loss="categorical_crossentropy", optimizer="sgd")
     model.compile(loss="binary_crossentropy", optimizer="sgd")
     # unet.compile(loss="categorical_crossentropy", optimizer="sgd")
     # vgg_model.compile(loss="categorical_crossentropy", optimizer="sgd")
-    print("Done compiling")
-    print("model input shape", model.input_shape)
-    print("model output shape", model.output_shape)
-    # print(unet.input_shape)
-    # print(unet.output_shape)
-    # print("vgg", vgg_model.input_shape)
-    # print("vgg", vgg_model.output_shape)
-    # exit(0)
-    # labels = labels.squeeze()
-
+    print("Reading data...")
     args = get_arguments()
     scan_reader = ScanReader(args.data_dir)
     # Get input and output
@@ -99,6 +85,9 @@ def main():
     # print(type(scans))
     scans = np.expand_dims(np.array(scans), -1)
     # print(scans.shape)
+
+    # Read label file
+    print("Reading labels...")
     with open("whole_tumor_label.json", "r") as f:
         try:
             while True:
