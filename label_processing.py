@@ -30,10 +30,10 @@ def load_scans_list(folder):
 
 def tumor_label(gt_path_list):
 
-    # Create file to store processed label
-    whole_tumor_label_file = open('whole_tumor_label.json', 'a')
-    tumor_core_label_file = open('tumor_core_label.json', 'a')
-    cystic_label_file = open('cystic_label.json', 'a')
+    # # Create file to store processed label
+    # whole_tumor_label_file = open('whole_tumor_label.json', 'a')
+    # tumor_core_label_file = open('tumor_core_label.json', 'a')
+    # cystic_label_file = open('cystic_label.json', 'a')
 
     # whole_tumor_label_list = []
     # tumor_core_label_list = []
@@ -95,6 +95,11 @@ def tumor_label(gt_path_list):
         tumor_core_label_dict[path[:path.rfind('/')]] = tumor_core_gt
         cystic_label_dict[path[:path.rfind('/')]] = cystic_gt
 
+        # Create file to store processed label
+        whole_tumor_label_file = open(path[:path.rfind('/')] + '/whole_tumor_label.json', 'w')
+        tumor_core_label_file = open(path[:path.rfind('/')] + '/tumor_core_label.json', 'w')
+        cystic_label_file = open(path[:path.rfind('/')] + '/cystic_label.json', 'w')
+
         # Save processed data
         print("Saving processed label data")
         wtl_obj = json.dumps(whole_tumor_label_dict)
@@ -110,9 +115,9 @@ def tumor_label(gt_path_list):
         # tumor_core_gt = []
         # cystic_gt = []
 
-    whole_tumor_label_file.close()
-    tumor_core_label_file.close()
-    cystic_label_file.close()
+        whole_tumor_label_file.close()
+        tumor_core_label_file.close()
+        cystic_label_file.close()
     #     whole_tumor_label_list.append(whole_tumor_gt)
     #     tumor_core_label_list.append(tumor_core_gt)
     #     cystic_label_list.append(cystic_gt)
