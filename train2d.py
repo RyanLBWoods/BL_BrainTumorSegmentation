@@ -106,9 +106,10 @@ def main():
                 if line:
                     split_dict = line.split('}')
                     for dict_str in split_dict:
-                        line = dict_str + '}'
-                        patient_dict = json.loads(line)
-                        print(patient_dict.keys())
+                        if dict_str != '':
+                            patient_line = dict_str + '}'
+                            patient_dict = json.loads(patient_line)
+                            print(patient_dict.keys())
                 else:
                     break
         except:
