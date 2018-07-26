@@ -99,9 +99,21 @@ def main():
     # print(type(scans))
     scans = np.expand_dims(np.array(scans), -1)
     # print(scans.shape)
-    f = open("whole_tumor_label.json", "r")
-    l = json.load(f)
-    # exit(0)
+    with open("whole_tumor_label.json", "r") as f:
+        try:
+            while True:
+                line = f.readline()
+                if line:
+                    split_dict = line.split('}')
+                    for dict_str in split_dict:
+                        line = dict_str + '}'
+                        patient_dict = json.loads(line)
+                        print(patient_dict.keys())
+                else:
+                    break
+        except:
+            f.close()
+    exit(0)
     label = []
     for key in l:
         label = [w for (_, w) in l[key]]
@@ -111,7 +123,7 @@ def main():
     labs = labs + label
     # print(len(labs))
     label = np.array(labs)
-    label = np.reshape(label, (960, ))
+    label = np.reshape(label, (960,))
     # print(label)
     print(label.shape)
     # labels = np.expand_dims(np.array(labels), -1)
@@ -156,7 +168,7 @@ def main():
     # print(len(onehot_labels))
     # print(onehot_labels.shape)
     # exit(0)
-    model.fit(scans, label, epochs=10, steps_per_epoch=1000)
+    model.fit(scans, label, epochs=10)
     # model.fit(scans, labels_binary, epochs=10, steps_per_epoch=1000)
     # model.fit(scans, onehot_labels, epochs=10, steps_per_epoch=1000)
     # print("Done training")
