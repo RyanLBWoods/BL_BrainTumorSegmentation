@@ -65,9 +65,9 @@ def load_data(path_list):
 
 
 def train_batch_generator(train_dict, label_class):
-    data_path_list = []
-    label_list = []
     for key in train_dict:
+        data_path_list = []
+        label_list = []
         for value in train_dict[key]:
             if 'nii.gz' in value:
                 data_path_list.append(value)
@@ -80,6 +80,7 @@ def train_batch_generator(train_dict, label_class):
         y = label + label
         y = y + label
         y = y + label
+        y = np.reshape(np.array(y), newshape=(960, ))
         yield (x, y)
 
 
