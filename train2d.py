@@ -81,7 +81,8 @@ def train_batch_generator(train_dict, label_class):
         y = y + label
         y = y + label
         y = np.reshape(np.array(y), newshape=(960, ))
-        yield (x, y)
+        for i in range(0, len(x), 10):
+            yield (x[i:i+10], y[i:i+10])
 
 
 def main():
