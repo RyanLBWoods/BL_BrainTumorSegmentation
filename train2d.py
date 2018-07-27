@@ -106,7 +106,7 @@ def main():
 
     # Train the model
     print("Training...")
-    model.fit_generator(generator=train_batch_generator(train_dict, args.label_class), epochs=10)
+    model.fit_generator(generator=train_batch_generator(train_dict, args.label_class), epochs=10, steps_per_epoch=1000)
     print("Done...")
     # prediction = model.predict(validation_scans)
     # print(prediction.shape())
