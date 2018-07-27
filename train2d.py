@@ -15,6 +15,7 @@ import vgg16
 from load_data_2d import ScanReader
 from keras.utils import to_categorical
 import numpy as np
+import nibabel as nib
 
 n_classes = 4
 BATCH_SIZE = 4
@@ -26,6 +27,7 @@ RESTORE_FROM = './deeplab_resnet.ckpt'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 100
 SNAPSHOT_DIR = './snapshots/'
+TRAINING_LABEL = 'whole_tumor_label.json'
 
 
 def get_arguments():
@@ -46,16 +48,30 @@ def get_arguments():
     parser.add_argument("--save-pred-every", type=int, default=SAVE_PRED_EVERY,
                         help="Save summaries and checkpoint every often.")
     parser.add_argument("--snapshot-dir", type=str, default=SNAPSHOT_DIR, help="Where to save snapshots of the model.")
+    parser.add_argument("--training-label", type=str, default=TRAINING_LABEL,
+                        help="Which classification. Whole tumor, tumor core or cystic")
 
     return parser.parse_args()
 
 
-def load_data():
-    args = get_arguments()
-    scan_reader = ScanReader(args.data_dir)
-    scans, labels = scan_reader.scan_img, scan_reader.label_img
-    print(scans)
-    print(labels)
+def load_data(path):
+    scans = []
+    scan_data = nib.load(path).get_data()
+    for data in scan_data:
+        scans.append(data)
+    return scans
+
+
+def train_batch_generator(train_dict, label_name):
+    for key in train_dict:
+        for value in train_dict[key]:
+            if 'nii.gz' in value:
+                x = load_data(value)
+            elif label_name in value:
+                with open(label_name, 'r') as f:
+                    label_dict = json.load(f)
+                    print(label_dict.keys())
+                    exit(0)
 
 
 def main():
@@ -72,37 +88,36 @@ def main():
     model.compile(loss="binary_crossentropy", optimizer="sgd")
     # unet.compile(loss="categorical_crossentropy", optimizer="sgd")
     # vgg_model.compile(loss="categorical_crossentropy", optimizer="sgd")
+
     print("Reading data...")
     args = get_arguments()
     scan_reader = ScanReader(args.data_dir)
     # Get input and output
-    # scans = [samples, channels, depth, height, width]
-    # labels = [samples, depth, height, width]
-    scans, labels = scan_reader.scan_img, scan_reader.label_img
-    # validation_scans, validation_labels = scan_reader.validation_scans, scan_reader.validation_labels
+    train_dict, validation_dict = scan_reader.train_dic, scan_reader.validation_dic
     # Reshape input to fit Tensorflow backend
     # [samples, depth, height, width, channel]
     # print(type(scans))
-    scans = np.expand_dims(np.array(scans), -1)
+    # scans = np.expand_dims(np.array(scans), -1)
     # print(scans.shape)
 
+    train_batch_generator(train_dict, args.training_label)
     # Read label file
-    print("Reading labels...")
-    with open("whole_tumor_label.json", "r") as f:
-        try:
-            while True:
-                line = f.readline()
-                if line:
-                    split_dict = line.split('}')
-                    for dict_str in split_dict:
-                        if dict_str != '':
-                            patient_line = dict_str + '}'
-                            patient_dict = json.loads(patient_line)
-                            print(patient_dict.keys())
-                else:
-                    break
-        except:
-            f.close()
+    # print("Reading labels...")
+    # with open("whole_tumor_label.json", "r") as f:
+    #     try:
+    #         while True:
+    #             line = f.readline()
+    #             if line:
+    #                 split_dict = line.split('}')
+    #                 for dict_str in split_dict:
+    #                     if dict_str != '':
+    #                         patient_line = dict_str + '}'
+    #                         patient_dict = json.loads(patient_line)
+    #                         print(patient_dict.keys())
+    #             else:
+    #                 break
+    #     except:
+    #         f.close()
     exit(0)
     label = []
     for key in l:
