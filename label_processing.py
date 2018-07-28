@@ -9,7 +9,6 @@ import os
 import nibabel as nib
 import numpy as np
 import json
-import matplotlib.pyplot as plt
 
 
 def load_scans_list(folder):
@@ -29,15 +28,6 @@ def load_scans_list(folder):
 
 
 def tumor_label(gt_path_list):
-
-    # # Create file to store processed label
-    # whole_tumor_label_file = open('whole_tumor_label.json', 'a')
-    # tumor_core_label_file = open('tumor_core_label.json', 'a')
-    # cystic_label_file = open('cystic_label.json', 'a')
-
-    # whole_tumor_label_list = []
-    # tumor_core_label_list = []
-    # cystic_label_list = []
     for path in gt_path_list:
         print("processing", path)
         # Create data dictionary
@@ -57,7 +47,6 @@ def tumor_label(gt_path_list):
             have_cystic = False
             whole_tumor_data = np.zeros(shape=(shape[1], shape[2]))
             tumor_core_data = np.zeros(shape=(shape[1], shape[2]))
-            # enhancing_tumor = np.zeros(shape=(shape[1], shape[2]))
             cystic_data = np.zeros(shape=(shape[1], shape[2]))
             for row in range(len(slice)):
                 for col in range(len(slice[row])):
@@ -111,35 +100,11 @@ def tumor_label(gt_path_list):
         cystic_obj = json.dumps(cystic_label_dict)
         cystic_label_file.write(cystic_obj)
 
-        # whole_tumor_gt = []
-        # tumor_core_gt = []
-        # cystic_gt = []
-
         whole_tumor_label_file.close()
         tumor_core_label_file.close()
         cystic_label_file.close()
-    #     whole_tumor_label_list.append(whole_tumor_gt)
-    #     tumor_core_label_list.append(tumor_core_gt)
-    #     cystic_label_list.append(cystic_gt)
-    #
-    # whole_tumor_label_list = np.array(whole_tumor_label_list)
-    # tumor_core_label_list = np.array(tumor_core_label_list)
-    # cystic_label_list = np.array(cystic_label_list)
-    # return whole_tumor_label_list, tumor_core_label_list, cystic_label_list
-    # return whole_tumor_label_dict, tumor_core_label_dict, cystic_label_dict
 
 
 data_folder = 'MICCAI_BraTS_2018_Data_Training'
 gt_path = load_scans_list(data_folder)
 tumor_label(gt_path)
-# whole_tumor, tumor_core, cystic = tumor_label(gt_path)
-# for key in whole_tumor:
-#     label = [l for (_, l) in whole_tumor[key]]
-#     print(label)
-
-
-
-
-# np.save("whole_tumor.npy", whole_tumor)
-# np.save("tumor_core.npy", whole_tumor)
-# np.save("cystic.npy", whole_tumor)
