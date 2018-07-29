@@ -53,7 +53,7 @@ def train_batch_generator(train_dict, label_class, batch_size):
             if 'nii.gz' in value:
                 data_path_list.append(value)
             elif label_class in value:
-                with open(label_class, 'r') as f:
+                with open(value, 'r') as f:
                     label_dict = json.load(f)
                     label_list = list(label_dict.values())
         x = load_data(data_path_list)
