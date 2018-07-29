@@ -9,17 +9,18 @@ import argparse
 import json
 import tensorflow as tf
 from ResNet2D import ResnetBuilder
-from vgg16 import vgg_model
-import vgg16
+# from vgg16 import vgg_model
+# import vgg16
 from load_data_2d import ScanReader
 import numpy as np
 import nibabel as nib
+import keras.backend.tensorflow_backend as ktf
 
 n_classes = 2
-BATCH_SIZE = 10
+BATCH_SIZE = 32
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
 LEARNING_RATE = 1e-4
-STEPS_PER_EPOCH = 19200
+STEPS_PER_EPOCH = 192000 / BATCH_SIZE
 LABEL_CLASS = 'whole_tumor_label'
 
 
@@ -67,13 +68,19 @@ def train_batch_generator(train_dict, label_class, batch_size):
 
 
 def main():
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    session = tf.Session(config=config)
+    ktf.set_session(session)
+
     # Build ResNet-101 model
     print("Building Neural Net...")
     model = ResnetBuilder.build_resnet_101((240, 155, 1), 1)
     # vgg_model = vgg16.vgg_model()
-    print("Input shape", model.input_shape)
-    print("Output shape", model.output_shape)
-    # Compiling
+    # print("Input shape", vgg_model.input_shape)
+    # print("Output shape", vgg_model.output_shape)
+    # exit(0)
+    # # Compiling
     print("Compiling...")
     model.compile(loss="binary_crossentropy", optimizer="sgd")
     # unet.compile(loss="categorical_crossentropy", optimizer="sgd")
