@@ -14,14 +14,15 @@ from ResNet2D import ResnetBuilder
 from load_data_2d import ScanReader
 import numpy as np
 import nibabel as nib
-import keras.backend.tensorflow_backend as ktf
+from keras import optimizers
 
 n_classes = 2
-BATCH_SIZE = 32
+BATCH_SIZE = 10
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
-LEARNING_RATE = 1e-4
 STEPS_PER_EPOCH = 192000 / BATCH_SIZE
 LABEL_CLASS = 'whole_tumor_label'
+LEARNING_RATE = 1e-4
+NUM_EPOCH = 10
 
 
 def get_arguments():
@@ -32,6 +33,8 @@ def get_arguments():
     parser.add_argument("--steps-per-epoch", type=str, default=STEPS_PER_EPOCH, help='Steps per epoch.')
     parser.add_argument("--label-class", type=str, default=LABEL_CLASS,
                         help="Which kind of classification. Whole tumor, tumor core or cystic")
+    parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE, help="Learning rate for training.")
+    parser.add_argument("--nb_epoch", type=int, default=NUM_EPOCH, help="Number of epochs")
 
     return parser.parse_args()
 
@@ -68,35 +71,34 @@ def train_batch_generator(train_dict, label_class, batch_size):
 
 
 def main():
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    session = tf.Session(config=config)
-    ktf.set_session(session)
+    # Get arguments
+    args = get_arguments()
 
     # Build ResNet-101 model
     print("Building Neural Net...")
     model = ResnetBuilder.build_resnet_101((240, 155, 1), 1)
-    # vgg_model = vgg16.vgg_model()
-    # print("Input shape", vgg_model.input_shape)
-    # print("Output shape", vgg_model.output_shape)
-    # exit(0)
-    # # Compiling
+
+    # Set learning rate
+    sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
+    # Compiling
     print("Compiling...")
-    model.compile(loss="binary_crossentropy", optimizer="sgd")
-    # unet.compile(loss="categorical_crossentropy", optimizer="sgd")
-    # vgg_model.compile(loss="categorical_crossentropy", optimizer="sgd")
+    model.compile(loss="binary_crossentropy", optimizer=sgd, metrices=['accuracy'])
+    print(model.summary())
 
     # Get input and output
     print("Reading data...")
-    args = get_arguments()
     scan_reader = ScanReader(args.data_dir)
     train_dict, validation_dict = scan_reader.train_dic, scan_reader.validation_dic
 
     # Train the model
     print("Training...")
-    model.fit_generator(generator=train_batch_generator(train_dict, args.label_class, args.batch_size), epochs=10,
-                        steps_per_epoch=args.steps_per_epoch)
+    history = model.fit_generator(generator=train_batch_generator(train_dict, args.label_class, args.batch_size),
+                                  epochs=args.nb_epoch,
+                                  steps_per_epoch=args.steps_per_epoch)
     print("Done...")
+    exit(0)
+    print("Saving Model...")
+    model.save_weights(args.label_class + ".h5")
     # prediction = model.predict(validation_scans)
     # print(prediction.shape())
     # print(len(prediction))
