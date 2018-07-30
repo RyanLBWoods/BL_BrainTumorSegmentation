@@ -54,10 +54,6 @@ def load_scans_dic(data_dir):
     scans_list = load_scans_list(data_dir)
 
     seg = []
-    # flair = []
-    # t1 = []
-    # t1ce = []
-    # t2 = []
     scans = []
     scans_dic = {}
     for vol in scans_list:
@@ -65,16 +61,7 @@ def load_scans_dic(data_dir):
             scans.append(vol)
         else:
             seg.append(vol)
-        # elif 'flair.nii' in vol:
-        #     flair.append(vol)
-        # elif 't1.nii' in vol:
-        #     t1.append(vol)
-        # elif 't1ce.nii' in vol:
-        #     t1ce.append(vol)
-        # elif 't2.nii' in vol:
-        #     t2.append(vol)
 
-    # Build a dictionary in the format of {seg:[flair, t1, t1ce, t2]}
     for s in seg:
         if s not in scans_dic:
             scans_dic[s] = []
@@ -85,46 +72,15 @@ def load_scans_dic(data_dir):
 
 
 def load_scan_data(mri_dict):
-    # scans_list = list(mri_dict.values())
-    # label_list = list(mri_dict.keys())
     scan_imgs = []
     label_imgs = []
-    # scan_img_list = []
-    # for label in mri_dict:
-        # label_imgs.append(nib.load(label).get_data())
-        # label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
-        # for scan in mri_dict[label]:
-        #     # scan_imgs.append(nib.load(scan).get_data())
-        #     scan_imgs.append(tf.convert_to_tensor(nib.load(scan).get_data(), dtype=tf.float32))
-        # scan_img_list.append(scan_imgs)
-        # scan_imgs = []
-    # for scan in scans_list:
-    #     for sc in scan:
-    #         scan_imgs.append(tf.convert_to_tensor(nib.load(sc).get_data(), dtype=tf.float32))
-    #         scan_tensor.append(scan_imgs)
-    #     scan_imgs = []
-    # for label in label_list:
-    #     label_imgs.append(tf.convert_to_tensor(nib.load(label).get_data(), dtype=tf.float32))
-    #
-    # scan_img = tf.cast(tf.convert_to_tensor(scan_img_list), dtype=tf.float32)
-    # label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
 
     for label in mri_dict:
-        label_data = nib.load(label).get_data()
-        for data in label_data:
-            label_imgs.append(data)
-            # label_imgs.append(tf.convert_to_tensor(data))
+        print(label)
         for scan in mri_dict[label]:
             scan_data = nib.load(scan).get_data()
             for data in scan_data:
-                # data = np.expand_dims(data, -1)
                 scan_imgs.append(data)
-                # scan_imgs.append(tf.convert_to_tensor(data))
-            # break
-        # break
-    # scan_tensor = tf.convert_to_tensor(scan_imgs)
-    # label_tensor = tf.convert_to_tensor(label_imgs)
-    # return scan_tensor, label_tensor
     return scan_imgs, label_imgs
 
 
@@ -144,7 +100,3 @@ class ScanReader(object):
         # self.queue = [self.scans_list, self.label_list]
         # self.scan_img, self.label_img = load_scan_data(self.train_dic)
         # self.validation_scans, self.validation_labels = load_scan_data(self.validation_dic)
-
-    def dequeue(self, num_elements):
-        scan_batch, label_batch = tf.train.batch([self.scan_img, self.label_img], num_elements)
-        return scan_batch, label_batch
