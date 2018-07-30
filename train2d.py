@@ -15,6 +15,7 @@ from load_data_2d import ScanReader
 import numpy as np
 import nibabel as nib
 from keras import optimizers
+from keras.utils import to_categorical
 
 n_classes = 2
 BATCH_SIZE = 10
@@ -66,8 +67,9 @@ def train_batch_generator(train_dict, label_class, batch_size):
         y = y + label
         y = y + label
         y = np.reshape(np.array(y), newshape=(960,))
+        one_hot_label = to_categorical(y, 2)
         for i in range(0, len(x), batch_size):
-            yield (x[i:i + batch_size], y[i:i + batch_size])
+            yield (x[i:i + batch_size], one_hot_label[i:i + batch_size])
 
 
 def main():
@@ -83,7 +85,8 @@ def main():
     adam = optimizers.Adam(lr=args.learning_rate)
     # Compiling
     print("Compiling...")
-    model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=['accuracy'])
+    # model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
     print(model.summary())
 
     # Get input and output
