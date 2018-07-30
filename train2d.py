@@ -82,7 +82,7 @@ def main():
     sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
     # Compiling
     print("Compiling...")
-    model.compile(loss="binary_crossentropy", optimizer=sgd, metrices=['accuracy'])
+    model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=['accuracy'])
     print(model.summary())
 
     # Get input and output
