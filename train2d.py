@@ -44,8 +44,7 @@ def load_data(path_list):
     scans = []
     for path in path_list:
         scan_data = nib.load(path).get_data()
-        for data in scan_data:
-            scans.append(data)
+        scans.extend(scan_data)
     scans = np.expand_dims(scans, -1)
     return scans
 
@@ -78,7 +77,7 @@ def main():
 
     # Build ResNet-101 model
     print("Building Neural Net...")
-    model = ResnetBuilder.build_resnet_101((240, 155, 1), 1)
+    model = ResnetBuilder.build_resnet_101((240, 155, 1), 2)
 
     # Set learning rate
     sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
