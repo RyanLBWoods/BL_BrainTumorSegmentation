@@ -61,7 +61,7 @@ def train_batch_generator(train_dict, label_class, batch_size):
                     label_dict = json.load(f)
                     label_list = list(label_dict.values())
         x = load_data(data_path_list)
-        label = [l for (_, l) in label_list]
+        label = [l for (_, l) in label_list[0]]
         y = label + label
         y = y + label
         y = y + label
