@@ -34,7 +34,7 @@ def get_arguments():
     parser.add_argument("--label-class", type=str, default=LABEL_CLASS,
                         help="Which kind of classification. Whole tumor, tumor core or cystic")
     parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE, help="Learning rate for training.")
-    parser.add_argument("--nb_epoch", type=int, default=NUM_EPOCH, help="Number of epochs")
+    parser.add_argument("--nb-epoch", type=int, default=NUM_EPOCH, help="Number of epochs")
 
     return parser.parse_args()
 
