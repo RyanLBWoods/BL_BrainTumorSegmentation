@@ -80,6 +80,7 @@ def main():
 
     # Set learning rate
     sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
+    adam = optimizers.Adam(lr=args.learning_rate)
     # Compiling
     print("Compiling...")
     model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=['accuracy'])
