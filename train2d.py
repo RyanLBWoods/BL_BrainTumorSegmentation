@@ -7,10 +7,7 @@
 
 import argparse
 import json
-import tensorflow as tf
 from ResNet2D import ResnetBuilder
-# from vgg16 import vgg_model
-# import vgg16
 from load_data_2d import ScanReader
 import numpy as np
 import nibabel as nib
@@ -22,7 +19,7 @@ BATCH_SIZE = 10
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
 STEPS_PER_EPOCH = 192000 / BATCH_SIZE
 LABEL_CLASS = 'whole_tumor_label'
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 0.001
 NUM_EPOCH = 10
 
 
@@ -49,11 +46,11 @@ def load_data(path_list):
     return scans
 
 
-def train_batch_generator(train_dict, label_class, batch_size):
-    for key in train_dict:
+def batch_generator(dict, label_class, batch_size):
+    for key in dict:
         data_path_list = []
         label_list = []
-        for value in train_dict[key]:
+        for value in dict[key]:
             if 'nii.gz' in value:
                 data_path_list.append(value)
             elif label_class in value:
@@ -84,7 +81,6 @@ def main():
     adam = optimizers.Adam(lr=args.learning_rate)
     # Compiling
     print("Compiling...")
-    # model.compile(loss="binary_crossentropy", optimizer=sgd, metrics=['accuracy'])
     model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
     print(model.summary())
 
@@ -95,16 +91,17 @@ def main():
 
     # Train the model
     print("Training...")
-    history = model.fit_generator(generator=train_batch_generator(train_dict, args.label_class, args.batch_size),
+    history = model.fit_generator(generator=batch_generator(train_dict, args.label_class, args.batch_size),
                                   epochs=args.nb_epoch,
                                   steps_per_epoch=args.steps_per_epoch)
     print("Done...")
-    exit(0)
     print("Saving Model...")
-    model.save_weights(args.label_class + ".h5")
-    # prediction = model.predict(validation_scans)
-    # print(prediction.shape())
-    # print(len(prediction))
+    model.save(args.label_class + ".h5")
+    with open('log_sgd_10_10.txt', 'w') as sgd_log:
+        sgd_log.write(str(history.history))
+
+    print("Evaluating...")
+    model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size), steps=8160)
 
 
 if __name__ == '__main__':
