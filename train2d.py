@@ -49,25 +49,26 @@ def load_data(path_list):
 
 
 def batch_generator(dict, label_class, batch_size):
-    for key in dict:
-        data_path_list = []
-        label_list = []
-        for value in dict[key]:
-            if 'nii.gz' in value:
-                data_path_list.append(value)
-            elif label_class in value:
-                with open(value, 'r') as f:
-                    label_dict = json.load(f)
-                    label_list = list(label_dict.values())
-        x = load_data(data_path_list)
-        label = [l for (_, l) in label_list[0]]
-        y = label + label
-        y = y + label
-        y = y + label
-        y = np.reshape(np.array(y), newshape=(960,))
-        one_hot_label = to_categorical(y, 2)
-        for i in range(0, len(x), batch_size):
-            yield (x[i:i + batch_size], one_hot_label[i:i + batch_size])
+    while True:
+        for key in dict:
+            data_path_list = []
+            label_list = []
+            for value in dict[key]:
+                if 'nii.gz' in value:
+                    data_path_list.append(value)
+                elif label_class in value:
+                    with open(value, 'r') as f:
+                        label_dict = json.load(f)
+                        label_list = list(label_dict.values())
+            x = load_data(data_path_list)
+            label = [l for (_, l) in label_list[0]]
+            y = label + label
+            y = y + label
+            y = y + label
+            y = np.reshape(np.array(y), newshape=(960,))
+            one_hot_label = to_categorical(y, 2)
+            for i in range(0, len(x), batch_size):
+                yield (x[i:i + batch_size], one_hot_label[i:i + batch_size])
 
 
 def main():
