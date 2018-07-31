@@ -98,7 +98,7 @@ def main():
                                   steps_per_epoch=args.steps_per_epoch)
     print("Done...")
     print("Saving Model...")
-    model.save(args.label_class + ".h5")
+    model.save(args.label_class + "_adam.h5")
     with open('log_adam_10_10.txt', 'w') as adam_log:
         adam_log.write(str(history.history))
 
