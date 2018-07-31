@@ -18,6 +18,7 @@ n_classes = 2
 BATCH_SIZE = 10
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
 STEPS_PER_EPOCH = 192000 / BATCH_SIZE
+VALIDATION_STEPS = 81600 / BATCH_SIZE
 LABEL_CLASS = 'whole_tumor_label'
 LEARNING_RATE = 0.001
 NUM_EPOCH = 10
@@ -29,6 +30,7 @@ def get_arguments():
                         help='Number of scans sent to network in one step.')
     parser.add_argument("--data-dir", type=str, default=TRAINING_DATA_DIRECTORY, help='Path to BraTS2018 training set.')
     parser.add_argument("--steps-per-epoch", type=str, default=STEPS_PER_EPOCH, help='Steps per epoch.')
+    parser.add_argument("--validation-steps", type=str, default=VALIDATION_STEPS, help='Validation steps.')
     parser.add_argument("--label-class", type=str, default=LABEL_CLASS,
                         help="Which kind of classification. Whole tumor, tumor core or cystic")
     parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE, help="Learning rate for training.")
@@ -77,11 +79,11 @@ def main():
     model = ResnetBuilder.build_resnet_101((240, 155, 1), 2)
 
     # Set learning rate
-    sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
-    adam = optimizers.Adam(lr=args.learning_rate)
+    # sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
+    # adam = optimizers.Adam(lr=args.learning_rate)
     # Compiling
     print("Compiling...")
-    model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer='adam', metrics=['accuracy'])
     print(model.summary())
 
     # Get input and output
@@ -97,11 +99,14 @@ def main():
     print("Done...")
     print("Saving Model...")
     model.save(args.label_class + ".h5")
-    with open('log_sgd_10_10.txt', 'w') as sgd_log:
-        sgd_log.write(str(history.history))
+    with open('log_adam_10_10.txt', 'w') as adam_log:
+        adam_log.write(str(history.history))
 
     print("Evaluating...")
-    model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size), steps=8160)
+    error = model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size),
+                                     steps=args.validation_steps)
+    with open('log_adam_val.txt', 'w') as val_error:
+        val_error.write(str(error))
 
 
 if __name__ == '__main__':
