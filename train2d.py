@@ -99,14 +99,14 @@ def main():
                                   steps_per_epoch=args.steps_per_epoch)
     print("Done...")
     print("Saving Model...")
-    model.save(args.label_class + "_adam.h5")
-    with open('log_adam_10_10.txt', 'w') as adam_log:
+    model.save(args.label_class + "_adam_seg.h5")
+    with open('log_adam_10_10_seg.txt', 'w') as adam_log:
         adam_log.write(str(history.history))
 
     print("Evaluating...")
     error = model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size),
                                      steps=args.validation_steps)
-    with open('log_adam_val.txt', 'w') as val_error:
+    with open('log_adam_val_seg.txt', 'w') as val_error:
         val_error.write(str(error))
 
 
