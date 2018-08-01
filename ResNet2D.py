@@ -27,7 +27,7 @@ from keras.layers.merge import add
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras import backend as K
-from BilinearUpSampling import  *
+from BilinearUpSampling import *
 
 
 def _bn_relu(input):
@@ -57,24 +57,6 @@ def _conv_bn_relu(**conv_params):
     return f
 
 
-def _deconv_bn_relu(**conv_params):
-    """Helper to build a conv -> BN -> relu block"""
-    filters = conv_params["filters"]
-    kernel_size = conv_params["kernel_size"]
-    strides = conv_params.setdefault("strides", (1, 1))
-    kernel_initializer = conv_params.setdefault("kernel_initializer", "he_normal")
-    padding = conv_params.setdefault("padding", "same")
-    kernel_regularizer = conv_params.setdefault("kernel_regularizer", l2(1.e-4))
-
-    def f(input):
-        deconv = Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
-                                 kernel_initializer=kernel_initializer, kernel_regularizer=kernel_regularizer)(input)
-
-        return _bn_relu(deconv)
-
-    return f
-
-
 def _bn_relu_conv(**conv_params):
     """Helper to build a BN -> relu -> conv block.
     This is an improved scheme proposed in http://arxiv.org/pdf/1603.05027v2.pdf
@@ -92,23 +74,6 @@ def _bn_relu_conv(**conv_params):
                       strides=strides, padding=padding,
                       kernel_initializer=kernel_initializer,
                       kernel_regularizer=kernel_regularizer)(activation)
-
-    return f
-
-
-def _bn_relu_deconv(**conv_params):
-    """Helper to build a BN -> relu -> deconv block"""
-    filters = conv_params["filters"]
-    kernel_size = conv_params["kernel_size"]
-    strides = conv_params.setdefault("strides", (1, 1))
-    kernel_initializer = conv_params.setdefault("kernel_initializer", "he_normal")
-    padding = conv_params.setdefault("padding", "same")
-    kernel_regularizer = conv_params.setdefault("kernel_regularizer", l2(1.e-4))
-
-    def f(input):
-        activation = _bn_relu(input)
-        return Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
-                               kernel_initializer=kernel_initializer, kernel_regularizer=kernel_regularizer)(activation)
 
     return f
 
@@ -147,21 +112,6 @@ def _residual_block(block_function, filters, repetitions, is_first_layer=False):
             input = block_function(filters=filters, init_strides=init_strides,
                                    is_first_block_of_first_layer=(is_first_layer and i == 0))(input)
         return input
-
-    return f
-
-
-def _deconv_residual_block(block_function, filters, repetitions, is_first_layer=False):
-    """Builds a deconvolutional residual block with repeating bottleneck block"""
-
-    def f(input):
-        for i in range(repetitions):
-            init_strides = (1, 1)
-            if i == 0 and not is_first_layer:
-                init_strides = (2, 2)
-            input = block_function(filters=filters, init_strides=init_strides,
-                                   is_first_layer=(is_first_layer and i == 0))(input)
-            return input
 
     return f
 
@@ -211,23 +161,6 @@ def bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False
 
         conv_3_3 = _bn_relu_conv(filters=filters, kernel_size=(3, 3))(conv_1_1)
         residual = _bn_relu_conv(filters=filters * 4, kernel_size=(1, 1))(conv_3_3)
-        return _shortcut(input, residual)
-
-    return f
-
-
-def deconv_bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False):
-    """Deconvolutional Bottleneck architecture"""
-
-    def f(input):
-        if is_first_block_of_first_layer:
-            deconv_1_1 = Conv2DTranspose(filters=filters, kernel_size=(1, 1), strides=init_strides, padding="same",
-                                         kernel_initializer="he_normal", kernel_regularizer=l2(1e-4))(input)
-        else:
-            deconv_1_1 = _bn_relu_deconv(filters=filters, kernel_size=(1, 1), strides=init_strides)(input)
-
-        deconv_3_3 = _bn_relu_deconv(filters=filters, kernel_size=(3, 3))(deconv_1_1)
-        residual = _bn_relu_deconv(filters=filters / 4, kernel_size=(1, 1))(deconv_3_3)
         return _shortcut(input, residual)
 
     return f
@@ -295,7 +228,16 @@ class ResnetBuilder(object):
         block = _bn_relu(block)
 
         # Classifier block
-        x = Conv2D(num_outputs, (1, 1), kernel_initializer="he_normal", activation='linear', padding='valid', strides=(1, 1), kernel_regularizer=l2(1e-4))(block)
+        block_shape = K.int_shape(block)
+        pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
+                                 strides=(1, 1))(block)
+
+        # Up sampling
+        upsample = UpSampling2D(size=(8, 5))(pool2)
+        x = Conv2D(num_outputs, (1, 1), kernel_initializer="he_normal", activation='linear', padding='valid',
+                   strides=(1, 1), kernel_regularizer=l2(1e-4))(upsample)
+        x = BatchNormalization(axis=CHANNEL_AXIS)(x)
+        x = Activation("softmax")(x)
         x = BilinearUpSampling2D(size=(30, 31))(x)
         # block_shape = K.int_shape(block)
         # pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),

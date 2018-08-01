@@ -44,7 +44,7 @@ def load_data(path_list):
     for path in path_list:
         scan_data = nib.load(path).get_data()
         scans.extend(scan_data)
-    scans = np.expand_dims(scans, -1)
+    scans = np.expand_dims(scans, -1).astype(np.float32)
     return scans
 
 
@@ -52,23 +52,15 @@ def batch_generator(dict, label_class, batch_size):
     while True:
         for key in dict:
             data_path_list = []
-            label_list = []
+            seg_data = nib.load(key).get_data()
+            one_hot_seg = to_categorical(seg_data, 5)
             for value in dict[key]:
                 if 'nii.gz' in value:
                     data_path_list.append(value)
-                elif label_class in value:
-                    with open(value, 'r') as f:
-                        label_dict = json.load(f)
-                        label_list = list(label_dict.values())
             x = load_data(data_path_list)
-            label = [l for (_, l) in label_list[0]]
-            y = label + label
-            y = y + label
-            y = y + label
-            y = np.reshape(np.array(y), newshape=(960,))
-            one_hot_label = to_categorical(y, 2)
+            y = np.concatenate((one_hot_seg, one_hot_seg, one_hot_seg, one_hot_seg))
             for i in range(0, len(x), batch_size):
-                yield (x[i:i + batch_size], one_hot_label[i:i + batch_size])
+                yield (x[i:i + batch_size], y[i:i + batch_size])
 
 
 def main():
@@ -77,7 +69,7 @@ def main():
 
     # Build ResNet-101 model
     print("Building Neural Net...")
-    model = ResnetBuilder.build_resnet_101((240, 155, 1), 2)
+    model = ResnetBuilder.build_resnet_101((240, 155, 1), 5)
 
     # Set learning rate
     # sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
@@ -86,6 +78,9 @@ def main():
     print("Compiling...")
     model.compile(loss="categorical_crossentropy", optimizer='adam', metrics=['accuracy'])
     print(model.summary())
+    with open('model_summary.txt', 'w') as ms:
+        model.summary(print_fn=lambda x: ms.write(x + '\n'))
+        # ms.write(str(model.summary()))
 
     # Get input and output
     print("Reading data...")
@@ -95,19 +90,22 @@ def main():
     # Train the model
     print("Training...")
     history = model.fit_generator(generator=batch_generator(train_dict, args.label_class, args.batch_size),
-                                  epochs=args.nb_epoch,
-                                  steps_per_epoch=args.steps_per_epoch)
+                                  epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch)
+    # history = model.fit_generator(generator=batch_generator(train_dict, args.label_class, args.batch_size),
+    #                               epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch,
+    #                               validation_data=batch_generator(validation_dict, args.label_class, args.batch_size),
+    #                               validation_steps=args.validation_steps)
     print("Done...")
     print("Saving Model...")
     model.save(args.label_class + "_adam_seg.h5")
     with open('log_adam_10_10_seg.txt', 'w') as adam_log:
         adam_log.write(str(history.history))
-
-    print("Evaluating...")
-    error = model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size),
-                                     steps=args.validation_steps)
-    with open('log_adam_val_seg.txt', 'w') as val_error:
-        val_error.write(str(error))
+    #
+    # print("Evaluating...")
+    # error = model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size),
+    #                                  steps=args.validation_steps)
+    # with open('log_adam_val_seg.txt', 'w') as val_error:
+    #     val_error.write(str(error))
 
 
 if __name__ == '__main__':
