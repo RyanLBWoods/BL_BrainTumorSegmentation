@@ -27,6 +27,7 @@ from keras.layers.merge import add
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras import backend as K
+from BilinearUpSampling import  *
 
 
 def _bn_relu(input):
@@ -290,28 +291,21 @@ class ResnetBuilder(object):
             block = _residual_block(block_fn, filters=filters, repetitions=r, is_first_layer=(i == 0))(block)
             filters *= 2
 
-        # print(filters)
         # Last activation
         block = _bn_relu(block)
 
         # Classifier block
-        block_shape = K.int_shape(block)
-        pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
-                                 strides=(1, 1))(block)
-        flatten1 = Flatten()(pool2)
-        dense = Dense(units=num_outputs, kernel_initializer="he_normal",
-                      activation="softmax")(flatten1)
+        x = Conv2D(num_outputs, (1, 1), kernel_initializer="he_normal", activation='linear', padding='valid', strides=(1, 1), kernel_regularizer=l2(1e-4))(block)
+        x = BilinearUpSampling2D(size=(30, 31))(x)
+        # block_shape = K.int_shape(block)
+        # pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
+        #                          strides=(1, 1))(block)
+        # flatten1 = Flatten()(pool2)
+        # dense = Dense(units=num_outputs, kernel_initializer="he_normal",
+        #               activation="softmax")(flatten1)
 
-        # block = dense
-        # for i, r in enumerate(repetitions.reverse()):
-        #     block = _deconv_residual_block(_get_block())
-        # upsampling1 = UpSampling2D()(dense)
-        # deconv1 = Conv2DTranspose(filters=filters, kernel_size=(3, 3), strides=(1, 1))(upsampling1)
-        #
-        # upsampling2 = UpSampling2D()(deconv1)
-        #
-        # output = upsampling2
-        model = Model(inputs=input, outputs=dense)
+        model = Model(inputs=input, outputs=x)
+        # model = Model(inputs=input, outputs=dense)
         return model
 
     @staticmethod
