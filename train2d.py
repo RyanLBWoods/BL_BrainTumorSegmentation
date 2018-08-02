@@ -13,8 +13,9 @@ import numpy as np
 import nibabel as nib
 from keras import optimizers
 from keras.utils import to_categorical
+from utils import batch_generator
 
-n_classes = 2
+n_classes = 5
 BATCH_SIZE = 10
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
 STEPS_PER_EPOCH = 192000 / BATCH_SIZE
@@ -39,28 +40,26 @@ def get_arguments():
     return parser.parse_args()
 
 
-def load_data(path_list):
-    scans = []
-    for path in path_list:
-        scan_data = nib.load(path).get_data()
-        scans.extend(scan_data)
-    scans = np.expand_dims(scans, -1).astype(np.float32)
-    return scans
+# def load_data(path_list):
+#     scans = []
+#     for path in path_list:
+#         scan_data = nib.load(path).get_data()
+#         scans.extend(scan_data)
+#     scans = np.expand_dims(scans, -1).astype(np.float32)
+#     return scans
 
 
-def batch_generator(dict, label_class, batch_size):
-    while True:
-        for key in dict:
-            data_path_list = []
-            seg_data = nib.load(key).get_data()
-            one_hot_seg = to_categorical(seg_data, 5)
-            for value in dict[key]:
-                if 'nii.gz' in value:
-                    data_path_list.append(value)
-            x = load_data(data_path_list)
-            y = np.concatenate((one_hot_seg, one_hot_seg, one_hot_seg, one_hot_seg))
-            for i in range(0, len(x), batch_size):
-                yield (x[i:i + batch_size], y[i:i + batch_size])
+# def batch_generator(dict, batch_size):
+#     while True:
+#         for key in dict:
+#             seg_data = nib.load(key).get_data()
+#             y = to_categorical(seg_data, 5)
+#             for value in dict[key]:
+#                 if 'nii.gz' in value:
+#                     slice_data = nib.load(value).get_data()
+#                     x = np.expand_dims(slice_data, -1).astype(np.float32)
+#                     for i in range(0, len(x), batch_size):
+#                         yield (x[i:i + batch_size], y[i:i + batch_size])
 
 
 def main():
@@ -80,7 +79,6 @@ def main():
     print(model.summary())
     with open('model_summary.txt', 'w') as ms:
         model.summary(print_fn=lambda x: ms.write(x + '\n'))
-        # ms.write(str(model.summary()))
 
     # Get input and output
     print("Reading data...")
@@ -89,12 +87,12 @@ def main():
 
     # Train the model
     print("Training...")
-    history = model.fit_generator(generator=batch_generator(train_dict, args.label_class, args.batch_size),
-                                  epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch)
-    # history = model.fit_generator(generator=batch_generator(train_dict, args.label_class, args.batch_size),
-    #                               epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch,
-    #                               validation_data=batch_generator(validation_dict, args.label_class, args.batch_size),
-    #                               validation_steps=args.validation_steps)
+    # history = model.fit_generator(generator=batch_generator(train_dict, args.batch_size),
+    #                               epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch)
+    history = model.fit_generator(generator=batch_generator(train_dict, args.batch_size, n_classes),
+                                  epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch,
+                                  validation_data=batch_generator(validation_dict, args.batch_size, n_classes),
+                                  validation_steps=args.validation_steps)
     print("Done...")
     print("Saving Model...")
     model.save(args.label_class + "_adam_seg.h5")

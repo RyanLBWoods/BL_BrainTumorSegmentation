@@ -10,10 +10,40 @@ from PIL import Image
 import tensorflow as tf
 # from keras.engine.topology import Layer
 import pydensecrf.densecrf as dcrf
+from matplotlib import colors
+import matplotlib.pyplot as plt
+from keras.utils import to_categorical
+import nibabel as nib
 
-n_classes = 4
+n_classes = 5  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
+label_colors = [(255, 255, 0), (255, 0, 0), (176, 1226, 255), (0, 255, 0)]
 # image mean
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
+
+
+def colormap():
+    map_list = ['#000000', '#FF0000', '#008B00', '#B0E2FF', '#FFFF00']
+    return colors.ListedColormap(map_list, 'indexed')
+
+
+def plot(scans, segs):
+    for i in range(len(segs)):
+        plt.imshow(scans[i], cmap='gray')
+        plt.imshow(segs[i], cmap=colormap(), alpha=0.3)
+        plt.show()
+
+
+def batch_generator(dict, batch_size, n_classes):
+    while True:
+        for key in dict:
+            seg_data = nib.load(key).get_data()
+            y = to_categorical(seg_data, n_classes)
+            for value in dict[key]:
+                if 'nii.gz' in value:
+                    slice_data = nib.load(value).get_data()
+                    x = np.expand_dims(slice_data, -1).astype(np.float32)
+                    for i in range(0, len(x), batch_size):
+                        yield (x[i:i + batch_size], y[i:i + batch_size])
 
 
 def decode_labels(label, num_images):
@@ -24,14 +54,22 @@ def decode_labels(label, num_images):
     for i in range(num_images):
         img = Image.new('L', (h, w))
         pixels = img.load()
-        # for j_, j in enumerate()
+        for j_, j in enumerate(label[i, :, :, 0]):
+            for k_, k in enumerate(j):
+                if k < n_classes:
+                    pixels[k_, j_] = label_colors[k]
         outputs[i] = np.array(img)
     return outputs
 
 
-def prepare_label(input_batch, new_size):
+def prepare_label(input_batch):
+    """[285, 4, 240, 240, 155]
+       [48000, 240, 155, 1]
+    """
+
     with tf.name_scope('label_encode'):
-        input_batch = tf.squeeze(input_batch, squeeze_dims=[1])
+        input_batch = tf.squeeze(input_batch)
+        input_batch = tf.one_hot(input_batch, n_classes)
 
     return input_batch
 
