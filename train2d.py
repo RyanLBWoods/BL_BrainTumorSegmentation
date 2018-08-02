@@ -14,12 +14,13 @@ import nibabel as nib
 from keras import optimizers
 from keras.utils import to_categorical
 from utils import batch_generator
+from keras.callbacks import TensorBoard
 
 n_classes = 5
 BATCH_SIZE = 10
 TRAINING_DATA_DIRECTORY = 'MICCAI_BraTS_2018_Data_Training'
-STEPS_PER_EPOCH = 192000 / BATCH_SIZE
-VALIDATION_STEPS = 81600 / BATCH_SIZE
+STEPS_PER_EPOCH = 48000 / BATCH_SIZE
+VALIDATION_STEPS = 20400 / BATCH_SIZE
 LABEL_CLASS = 'whole_tumor_label'
 LEARNING_RATE = 0.001
 NUM_EPOCH = 10
@@ -68,7 +69,7 @@ def main():
 
     # Build ResNet-101 model
     print("Building Neural Net...")
-    model = ResnetBuilder.build_resnet_101((240, 155, 1), 5)
+    model = ResnetBuilder.build_resnet_101((240, 155, 4), 5)
 
     # Set learning rate
     # sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
@@ -77,7 +78,7 @@ def main():
     print("Compiling...")
     model.compile(loss="categorical_crossentropy", optimizer='adam', metrics=['accuracy'])
     print(model.summary())
-    with open('model_summary.txt', 'w') as ms:
+    with open('model_summary_channels=4.txt', 'w') as ms:
         model.summary(print_fn=lambda x: ms.write(x + '\n'))
 
     # Get input and output
@@ -87,17 +88,19 @@ def main():
 
     # Train the model
     print("Training...")
+    tensorboard = TensorBoard(log_dir='./log', histogram_freq=0, write_graph=True, write_images=False)
     # history = model.fit_generator(generator=batch_generator(train_dict, args.batch_size),
     #                               epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch)
     history = model.fit_generator(generator=batch_generator(train_dict, args.batch_size, n_classes),
                                   epochs=args.nb_epoch, steps_per_epoch=args.steps_per_epoch,
                                   validation_data=batch_generator(validation_dict, args.batch_size, n_classes),
-                                  validation_steps=args.validation_steps)
+                                  validation_steps=args.validation_steps, callbacks=tensorboard)
     print("Done...")
     print("Saving Model...")
-    model.save(args.label_class + "_adam_seg.h5")
-    with open('log_adam_10_10_seg.txt', 'w') as adam_log:
+    model.save(args.label_class + "_adam_seg_channel=4.h5")
+    with open('log_adam_seg_channel=4.txt', 'w') as adam_log:
         adam_log.write(str(history.history))
+
     #
     # print("Evaluating...")
     # error = model.evaluate_generator(generator=batch_generator(validation_dict, args.label_class, args.batch_size),
