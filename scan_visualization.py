@@ -9,9 +9,10 @@ import os
 import nibabel as nib
 import tensorflow as tf
 import numpy as np
+import keras
 
-
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib import colors
 
 
 def train_validation_split(data_dict):
@@ -42,10 +43,11 @@ def load_scans_list(folder):
     for grade in grades:
         files = os.listdir(os.path.join(folder, grade))
         for file in files:
-            volume = os.listdir(os.path.join(folder, grade, file))
-            for data in volume:
-                data_path = os.path.join(folder, grade, file, data)
-                all_list.append(data_path)
+            if '.DS_Store' not in file:
+                volume = os.listdir(os.path.join(folder, grade, file))
+                for data in volume:
+                    data_path = os.path.join(folder, grade, file, data)
+                    all_list.append(data_path)
     return all_list
 
 
@@ -55,10 +57,6 @@ def load_scans_dic():
     scans_list = load_scans_list(data_folder)
 
     seg = []
-    flair = []
-    t1 = []
-    t1ce = []
-    t2 = []
     scans = []
     scans_dic = {}
     for vol in scans_list:
@@ -66,14 +64,6 @@ def load_scans_dic():
             scans.append(vol)
         else:
             seg.append(vol)
-        # elif 'flair.nii' in vol:
-        #     flair.append(vol)
-        # elif 't1.nii' in vol:
-        #     t1.append(vol)
-        # elif 't1ce.nii' in vol:
-        #     t1ce.append(vol)
-        # elif 't2.nii' in vol:
-        #     t2.append(vol)
 
     # Build a dictionary in the format of {seg:[flair, t1, t1ce, t2]}
     for s in seg:
@@ -85,33 +75,34 @@ def load_scans_dic():
     return scans_dic
 
 
+def colormap():
+    map_list = ['#000000', '#FF0000', '#008B00', '#B0E2FF', '#FFFF00']
+    return colors.ListedColormap(map_list, 'indexed')
+
+
 def load_scan_data(dict):
-    # scans_list = input_queue[0]
-    # scans_list = list(dict.values())
-    # label_list = list(dict.keys())
-    # label_list = input_queue[1]
-    scan_imgs = []
-    scan_tensor = []
-    label_imgs = []
+    scan_data = []
+    data = []
     for label in dict:
         label_data = nib.load(label).get_data()
-        for data in label_data:
-            label_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
+        count = 0
         for scan in dict[label]:
-            scan_data = nib.load(scan).get_data()
-            for data in scan_data:
-                scan_imgs.append(tf.convert_to_tensor(data, dtype=tf.float32))
-        # scan_tensor.append(scan_imgs)
-        # scan_imgs = []
-
-    print(len(label_imgs))
-    print(len(scan_imgs))
-
-    scan_img = tf.cast(tf.convert_to_tensor(scan_imgs), dtype=tf.float32)
-    label_img = tf.cast(tf.convert_to_tensor(label_imgs), dtype=tf.float32)
-
-    print(scan_img)
-    print(label_img)
+            if '.json' not in scan:
+                scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
+                if count == 0:
+                    data = scan_data
+                else:
+                    data = np.concatenate((data, scan_data), axis=-1)
+                count = count + 1
+        break
+    print(data.shape)
+    print(data[0].shape)
+    exit(0)
+    # for i in range(len(label_data)):
+    #     plt.imshow(scan_data[i], cmap='gray')
+    #     plt.imshow(label_data[i], cmap=colormap(), alpha=0.3)
+    #     plt.show()
+    # break
 
 
 dic = load_scans_dic()
