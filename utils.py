@@ -56,6 +56,26 @@ def batch_generator(dict, batch_size, n_classes):
                 yield (x[i:i + batch_size], y[i:i + batch_size])
 
 
+def test_batch_generator(dict, batch_size):
+    while True:
+        for key in dict:
+            count = 0
+            data = []
+            for scan in dict[key]:
+                scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
+                if count == 0:
+                    data = scan_data
+                else:
+                    data = np.concatenate((data, scan_data), axis=-1)
+                count = count + 1
+                # for value in dict[key]:
+                #     if 'nii.gz' in value:
+                #         slice_data = nib.load(value).get_data()
+            x = data.astype(np.float32)
+            for i in range(0, len(x), batch_size):
+                yield (x[i:i + batch_size])
+
+
 def decode_labels(label, num_images):
     n, h, w, c = label.shape
     assert (n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (
