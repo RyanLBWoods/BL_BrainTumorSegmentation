@@ -14,7 +14,8 @@ import nibabel as nib
 import numpy as np
 from PIL import Image
 from utils import *
-from load_data_2d import ScanReader
+from testing_data_reader import ScanReader
+from BilinearUpSampling import BilinearUpSampling2D
 
 label_colors = [(0, 0, 0), (255, 255, 0), (255, 0, 0), (176, 1226, 255), (0, 255, 0)]
 
@@ -64,9 +65,11 @@ def main():
     print("Reading data...")
     scan_reader = ScanReader(args.data_dir)
     data_dict = scan_reader.mri_dic
-    model_path = 'whole_tumor_label_adam_seg.h5'
-    model = load_model(model_path)
-    probs = model.predict_generator(generator=batch_generator(data_dict, args.batch_size, n_classes), steps=args.steps)
+    model_path = 'whole_tumor_label_adam_seg_channel=4.h5'
+    print("Loading model...")
+    model = load_model(model_path, custom_objects={'BilinearUpSampling2D': BilinearUpSampling2D})
+    print("Predicting...")
+    probs = model.predict_generator(generator=test_batch_generator(data_dict, args.batch_size), steps=args.steps)
     print(probs.shape)
     exit(0)
 
