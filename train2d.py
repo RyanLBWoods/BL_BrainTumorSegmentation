@@ -13,7 +13,7 @@ import numpy as np
 import nibabel as nib
 from keras import optimizers
 from keras.utils import to_categorical
-from utils import batch_generator
+from utils import *
 from keras.callbacks import TensorBoard, ModelCheckpoint
 
 n_classes = 5
@@ -47,14 +47,14 @@ def main():
 
     # Build ResNet-101 model
     print("Building Neural Net...")
-    model = ResnetBuilder.build_resnet_101((240, 155, 4), 5)
+    model = ResnetBuilder.build_resnet_101((240, 155, 4), 2)
 
     # Set learning rate
     sgd = optimizers.SGD(lr=args.learning_rate, momentum=0.9, decay=0, nesterov=False)
     # adam = optimizers.Adam(lr=args.learning_rate)
     # Compiling
     print("Compiling...")
-    model.compile(loss="categorical_crossentropy", optimizer='adam', metrics=['accuracy'])
+    model.compile(loss=dice_coef_loss, optimizer='adam', metrics=[dice_coef])
     print(model.summary())
     # with open('model_summary_channels=4.txt', 'w') as ms:
     #     model.summary(print_fn=lambda x: ms.write(x + '\n'))

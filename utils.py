@@ -13,6 +13,7 @@ import pydensecrf.densecrf as dcrf
 from matplotlib import colors
 import matplotlib.pyplot as plt
 from keras.utils import to_categorical
+import keras.backend as K
 import nibabel as nib
 
 n_classes = 5  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
@@ -31,6 +32,21 @@ def plot(scans, segs):
         plt.imshow(scans[i], cmap='gray')
         plt.imshow(segs[i], cmap=colormap(), alpha=0.3)
         plt.show()
+
+
+def dice_coef(y_true, y_pred, smooth=1):
+    intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
+    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
+    return K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
+    # y_true_f = K.flatten(y_true)
+    # y_pred_f = K.flatten(y_pred)
+    # intersection = K.sum(y_true_f * y_pred_f)
+    # union = K.sum(y_true_f) + K.sum(y_pred_f)
+    # return (2. * intersection + smooth) / (union + smooth)
+
+
+def dice_coef_loss(y_true, y_pred):
+    return 1 - dice_coef(y_true, y_pred)
 
 
 def batch_generator(dict, batch_size, n_classes):
