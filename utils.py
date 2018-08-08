@@ -17,7 +17,7 @@ from keras.utils import to_categorical
 import keras.backend as K
 import nibabel as nib
 
-n_classes = 5  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
+n_classes = 2  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
 label_colors = [(255, 255, 0), (255, 0, 0), (176, 1226, 255), (0, 255, 0)]
 # image mean
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
@@ -28,11 +28,22 @@ def colormap():
     return colors.ListedColormap(map_list, 'indexed')
 
 
+def pred_colormap():
+    map_list = ['#000000', '#B0E2FF']
+    return colors.ListedColormap(map_list, 'indexed')
+
+
 def plot(scans, segs):
     for i in range(len(segs)):
         plt.imshow(scans[i], cmap='gray')
         plt.imshow(segs[i], cmap=colormap(), alpha=0.3)
         plt.show()
+
+
+def extract_patches(a, patch_size):
+    m, n = a.shape
+    b0, b1 = patch_size
+    return a.reshape(m // b0, b0, n // b1, b1).swapaxes(1, 2).reshape(-1, b0, b1)
 
 
 def dice_coef(y_true, y_pred, smooth=1):
@@ -53,35 +64,53 @@ def dice_coef_loss(y_true, y_pred):
 def batch_generator(dict, batch_size, n_classes, label_class):
     while True:
         for key in dict:
-            count = 0
-            data = []
-            x = []
             y = []
             ids = []
             for scan in dict[key]:
-                if '.json' not in scan:
-                    scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
-                    if count == 0:
-                        data = scan_data
-                    else:
-                        data = np.concatenate((data, scan_data), axis=-1)
-                    count = count + 1
                 if label_class in scan:
                     with open(scan, 'r') as f:
                         label_data = json.load(f)
-                        for key in label_data:
-                            slices = [s for (s, _) in label_data[key]]
-                            labels = [l for (_, l) in label_data[key]]
+                        for k in label_data:
+                            slices = [s for (s, _) in label_data[k]]
+                            labels = [l for (_, l) in label_data[k]]
                             for index in range(0, len(labels)):
                                 if labels[index] == 1:
                                     ids.append(index)
                                     y.append(slices[index])
-            for i in ids:
-                x.append(data[i])
-            x = np.array(x)
-            y = to_categorical(y, n_classes)
-            for i in range(0, len(x), batch_size):
-                yield (x[i:i + batch_size], y[i:i + batch_size])
+            y = np.array(y)
+            x_train = []
+            y_train = []
+            c_count = 0
+            print(len(ids))
+            for scan in dict[key]:
+                print(scan)
+                if '.json' not in scan:
+                    scan_data = nib.load(scan).get_data()
+                    x_c = []
+                    x = []
+                    for i in ids:
+                        x.append(scan_data[i])
+                    x = np.array(x)
+                    y = np.array(y)
+                    for j in range(0, len(y)):
+                        x_patches = extract_patches(x[j], patch_size=(48, 31))
+                        y_patches = extract_patches(y[j], patch_size=(48, 31))
+                        for yi in range(0, len(y_patches)):
+                            if 1 in y_patches[yi]:
+                                x_c.append(x_patches[yi])
+                                y_train.append(y_patches[yi])
+                    x_c = np.expand_dims(np.array(x_c), axis=-1)
+                    if c_count == 0:
+                        x_train = x_c
+                        c_count = c_count + 1
+                    else:
+                        x_train = np.concatenate((x_train, x_c), axis=-1)
+            y_train = to_categorical(y_train[0:len(x_train)], n_classes)
+            print(x_train.shape)
+            print(y_train.shape)
+            exit(0)
+            for i in range(0, len(x_train), batch_size):
+                yield (x_train[i:i + batch_size], y_train[i:i + batch_size])
 
 
 def test_batch_generator(dict, batch_size):
@@ -96,9 +125,6 @@ def test_batch_generator(dict, batch_size):
                 else:
                     data = np.concatenate((data, scan_data), axis=-1)
                 count = count + 1
-                # for value in dict[key]:
-                #     if 'nii.gz' in value:
-                #         slice_data = nib.load(value).get_data()
             x = data.astype(np.float32)
             for i in range(0, len(x), batch_size):
                 yield (x[i:i + batch_size])
