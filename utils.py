@@ -6,6 +6,7 @@
 #
 
 import numpy as np
+import json
 from PIL import Image
 import tensorflow as tf
 # from keras.engine.topology import Layer
@@ -35,27 +36,28 @@ def plot(scans, segs):
 
 
 def dice_coef(y_true, y_pred, smooth=1):
-    intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
-    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
-    return K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
-    # y_true_f = K.flatten(y_true)
-    # y_pred_f = K.flatten(y_pred)
-    # intersection = K.sum(y_true_f * y_pred_f)
-    # union = K.sum(y_true_f) + K.sum(y_pred_f)
-    # return (2. * intersection + smooth) / (union + smooth)
+    # intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
+    # union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
+    # return K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
+    y_true_f = K.flatten(y_true[..., 1:])
+    y_pred_f = K.flatten(y_pred[..., 1:])
+    intersection = K.sum(y_true_f * y_pred_f, axis=-1)
+    union = K.sum(y_true_f, axis=-1) + K.sum(y_pred_f, axis=-1)
+    return K.mean((2. * intersection + smooth) / (union + smooth))
 
 
 def dice_coef_loss(y_true, y_pred):
     return 1 - dice_coef(y_true, y_pred)
 
 
-def batch_generator(dict, batch_size, n_classes):
+def batch_generator(dict, batch_size, n_classes, label_class):
     while True:
         for key in dict:
-            seg_data = nib.load(key).get_data()
-            y = to_categorical(seg_data, n_classes)
             count = 0
             data = []
+            x = []
+            y = []
+            ids = []
             for scan in dict[key]:
                 if '.json' not in scan:
                     scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
@@ -64,10 +66,20 @@ def batch_generator(dict, batch_size, n_classes):
                     else:
                         data = np.concatenate((data, scan_data), axis=-1)
                     count = count + 1
-                # for value in dict[key]:
-                #     if 'nii.gz' in value:
-                #         slice_data = nib.load(value).get_data()
-            x = data.astype(np.float32)
+                if label_class in scan:
+                    with open(scan, 'r') as f:
+                        label_data = json.load(f)
+                        for key in label_data:
+                            slices = [s for (s, _) in label_data[key]]
+                            labels = [l for (_, l) in label_data[key]]
+                            for index in range(0, len(labels)):
+                                if labels[index] == 1:
+                                    ids.append(index)
+                                    y.append(slices[index])
+            for i in ids:
+                x.append(data[i])
+            x = np.array(x)
+            y = to_categorical(y, n_classes)
             for i in range(0, len(x), batch_size):
                 yield (x[i:i + batch_size], y[i:i + batch_size])
 
