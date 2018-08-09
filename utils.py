@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from keras.utils import to_categorical
 import keras.backend as K
 import nibabel as nib
+from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
 
 n_classes = 2  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
 label_colors = [(255, 255, 0), (255, 0, 0), (176, 1226, 255), (0, 255, 0)]
@@ -40,10 +41,10 @@ def plot(scans, segs):
         plt.show()
 
 
-def extract_patches(a, patch_size):
-    m, n = a.shape
-    b0, b1 = patch_size
-    return a.reshape(m // b0, b0, n // b1, b1).swapaxes(1, 2).reshape(-1, b0, b1)
+# def extract_patches(a, patch_size):
+#     m, n = a.shape
+#     b0, b1 = patch_size
+#     return a.reshape(m // b0, b0, n // b1, b1).swapaxes(1, 2).reshape(-1, b0, b1)
 
 
 def dice_coef(y_true, y_pred, smooth=1):
@@ -83,7 +84,6 @@ def batch_generator(dict, batch_size, n_classes, label_class):
             c_count = 0
             print(len(ids))
             for scan in dict[key]:
-                print(scan)
                 if '.json' not in scan:
                     scan_data = nib.load(scan).get_data()
                     x_c = []
@@ -93,8 +93,8 @@ def batch_generator(dict, batch_size, n_classes, label_class):
                     x = np.array(x)
                     y = np.array(y)
                     for j in range(0, len(y)):
-                        x_patches = extract_patches(x[j], patch_size=(48, 31))
-                        y_patches = extract_patches(y[j], patch_size=(48, 31))
+                        x_patches = extract_patches_2d(x[j], (48, 31))
+                        y_patches = extract_patches_2d(y[j], (48, 31))
                         for yi in range(0, len(y_patches)):
                             if 1 in y_patches[yi]:
                                 x_c.append(x_patches[yi])
@@ -106,9 +106,6 @@ def batch_generator(dict, batch_size, n_classes, label_class):
                     else:
                         x_train = np.concatenate((x_train, x_c), axis=-1)
             y_train = to_categorical(y_train[0:len(x_train)], n_classes)
-            print(x_train.shape)
-            print(y_train.shape)
-            exit(0)
             for i in range(0, len(x_train), batch_size):
                 yield (x_train[i:i + batch_size], y_train[i:i + batch_size])
 
@@ -118,13 +115,19 @@ def test_batch_generator(dict, batch_size):
         for key in dict:
             count = 0
             data = []
+            patched_slices = []
             for scan in dict[key]:
-                scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
+                scan_data = nib.load(scan).get_data()
+                for slice in scan_data:
+                    scan_patches = extract_patches_2d(slice, (48, 31))
+                    patched_slices.extend(scan_patches)
+                patched_slices = np.expand_dims(patched_slices, axis=-1)
                 if count == 0:
-                    data = scan_data
+                    data = patched_slices
+                    count = count + 1
                 else:
-                    data = np.concatenate((data, scan_data), axis=-1)
-                count = count + 1
+                    data = np.concatenate((data, patched_slices), axis=-1)
+                patched_slices = []
             x = data.astype(np.float32)
             for i in range(0, len(x), batch_size):
                 yield (x[i:i + batch_size])
