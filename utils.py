@@ -78,7 +78,7 @@ def batch_generator(dict, batch_size, n_classes, label_class):
                     for s in range(0, len(scan_data)):
                         scaled = preprocessing.MinMaxScaler().fit_transform(scan_data[s])
                         scan_data[s] = scaled
-                    scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
+                    scan_data = np.expand_dims(scan_data, axis=-1)
                     if count == 0:
                         data = scan_data
                     else:
