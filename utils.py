@@ -82,7 +82,6 @@ def batch_generator(dict, batch_size, n_classes, label_class):
             x_train = []
             y_train = []
             c_count = 0
-            print(len(ids))
             for scan in dict[key]:
                 if '.json' not in scan:
                     scan_data = nib.load(scan).get_data()
