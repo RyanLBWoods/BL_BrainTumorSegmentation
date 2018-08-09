@@ -17,6 +17,7 @@ from keras.utils import to_categorical
 import keras.backend as K
 import nibabel as nib
 from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
+from sklearn import preprocessing
 
 n_classes = 2  # Whole tumor, tumor core, enhancing tumor, cystic/necrotic component, non-tumor part
 label_colors = [(255, 255, 0), (255, 0, 0), (176, 1226, 255), (0, 255, 0)]
@@ -25,7 +26,7 @@ IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32
 
 
 def colormap():
-    map_list = ['#000000', '#FF0000', '#008B00', '#B0E2FF', '#FFFF00']
+    map_list = ['#000000', '#FF0000']#, '#008B00', '#B0E2FF', '#FFFF00']
     return colors.ListedColormap(map_list, 'indexed')
 
 
@@ -65,87 +66,128 @@ def dice_coef_loss(y_true, y_pred):
 def batch_generator(dict, batch_size, n_classes, label_class):
     while True:
         for key in dict:
+            count = 0
+            data = []
+            x = []
             y = []
             ids = []
+            # x_train, y_train = [], []
             for scan in dict[key]:
+                if '.json' not in scan:
+                    scan_data = nib.load(scan).get_data().astype(np.float32)
+                    for s in range(0, len(scan_data)):
+                        scaled = preprocessing.MinMaxScaler().fit_transform(scan_data[s])
+                        scan_data[s] = scaled
+                    scan_data = np.expand_dims(nib.load(scan).get_data(), axis=-1)
+                    if count == 0:
+                        data = scan_data
+                    else:
+                        data = np.concatenate((data, scan_data), axis=-1)
+                    count = count + 1
                 if label_class in scan:
                     with open(scan, 'r') as f:
                         label_data = json.load(f)
-                        for k in label_data:
-                            slices = [s for (s, _) in label_data[k]]
-                            labels = [l for (_, l) in label_data[k]]
+                        for key in label_data:
+                            slices = [s for (s, _) in label_data[key]]
+                            labels = [l for (_, l) in label_data[key]]
                             for index in range(0, len(labels)):
                                 if labels[index] == 1:
                                     ids.append(index)
                                     y.append(slices[index])
+            for i in ids:
+                x.append(data[i])
+            x = np.array(x)
             y = np.array(y)
-            x_train = []
-            y_train = []
-            c_count = 0
-            for scan in dict[key]:
-                if '.json' not in scan:
-                    scan_data = nib.load(scan).get_data()
-                    x_c = []
-                    x = []
-                    for i in ids:
-                        x.append(scan_data[i])
-                    x = np.array(x)
-                    y = np.array(y)
-                    for j in range(0, len(y)):
-                        x_patches = extract_patches_2d(x[j], (48, 31))
-                        y_patches = extract_patches_2d(y[j], (48, 31))
-                        for yi in range(0, len(y_patches)):
-                            if 1 in y_patches[yi]:
-                                x_c.append(x_patches[yi])
-                                y_train.append(y_patches[yi])
-                    x_c = np.expand_dims(np.array(x_c), axis=-1)
-                    if c_count == 0:
-                        x_train = x_c
-                        c_count = c_count + 1
-                    else:
-                        x_train = np.concatenate((x_train, x_c), axis=-1)
-            y_train = to_categorical(y_train[0:len(x_train)], n_classes)
-            for i in range(0, len(x_train), batch_size):
-                yield (x_train[i:i + batch_size], y_train[i:i + batch_size])
+            for i in range(0, len(y)):
+                x_patches = extract_patches_2d(x[i], (48, 31))
+                y_patches = extract_patches_2d(y[i], (48, 31))
+                x_train, y_train = [], []
+                for p in range(0, len(y_patches)):
+                    if 1 in y_patches[p]:
+                        x_train.append(x_patches[p])
+                        y_train.append(y_patches[p])
+                x_train = np.array(x_train)
+                y_train = to_categorical(y_train, n_classes)
+                for j in range(0, len(x_train), batch_size):
+                    yield (x_train[j:j + batch_size], y_train[j:j + batch_size])
+    # while True:
+    #     for key in dict:
+    #         y = []
+    #         ids = []
+    #         for scan in dict[key]:
+    #             if label_class in scan:
+    #                 with open(scan, 'r') as f:
+    #                     label_data = json.load(f)
+    #                     for k in label_data:
+    #                         slices = [s for (s, _) in label_data[k]]
+    #                         labels = [l for (_, l) in label_data[k]]
+    #                         for index in range(0, len(labels)):
+    #                             if labels[index] == 1:
+    #                                 ids.append(index)
+    #                                 y.append(slices[index])
+    #         y = np.array(y)
+    #         x_train = []
+    #         y_train = []
+    #         c_count = 0
+    #         for scan in dict[key]:
+    #             if '.json' not in scan:
+    #                 scan_data = nib.load(scan).get_data()
+    #                 x_c = []
+    #                 x = []
+    #                 for i in ids:
+    #                     x.append(scan_data[i])
+    #                 x = np.array(x)
+    #                 y = np.array(y)
+    #                 for j in range(0, len(y)):
+    #                     x_patches = extract_patches_2d(x[j], (48, 31))
+    #                     y_patches = extract_patches_2d(y[j], (48, 31))
+    #                     for yi in range(0, len(y_patches)):
+    #                         if 1 in y_patches[yi]:
+    #                             x_c.append(x_patches[yi])
+    #                             y_train.append(y_patches[yi])
+    #                 x_c = np.expand_dims(np.array(x_c), axis=-1)
+    #                 if c_count == 0:
+    #                     x_train = x_c
+    #                     c_count = c_count + 1
+    #                 else:
+    #                     x_train = np.concatenate((x_train, x_c), axis=-1)
+    #         y_train = to_categorical(y_train[0:len(x_train)], n_classes)
+    #         for i in range(0, len(x_train), batch_size):
+    #             yield (x_train[i:i + batch_size], y_train[i:i + batch_size])
 
 
 def test_batch_generator(dict, batch_size):
     while True:
         for key in dict:
-            count = 0
-            data = []
-            patched_slices = []
-            for scan in dict[key]:
-                scan_data = nib.load(scan).get_data()
-                for slice in scan_data:
-                    scan_patches = extract_patches_2d(slice, (48, 31))
-                    patched_slices.extend(scan_patches)
-                patched_slices = np.expand_dims(patched_slices, axis=-1)
-                if count == 0:
-                    data = patched_slices
-                    count = count + 1
-                else:
-                    data = np.concatenate((data, patched_slices), axis=-1)
-                patched_slices = []
-            x = data.astype(np.float32)
-            for i in range(0, len(x), batch_size):
-                yield (x[i:i + batch_size])
-
-
-def decode_labels(label, num_images):
-    n, h, w, c = label.shape
-    assert (n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (
-        n, num_images)
-    outputs = np.zeros((num_images, h, w, 1), dtype=np.uint8)
-    for i in range(num_images):
-        img = Image.new('L', (h, w))
-        pixels = img.load()
-        for j_, j in enumerate(label[i, :, :, 0]):
-            for k_, k in enumerate(j):
-                if k < n_classes:
-                    pixels[k_, j_] = label_colors[k]
-        outputs[i] = np.array(img)
-    return outputs
+            # seg_data = nib.load(key).get_data()
+            # y = to_categorical(seg_data, n_classes)
+            for value in dict[key]:
+                print(value)
+                if 'nii.gz' in value:
+                    slice_data = nib.load(value).get_data()
+                    x = np.expand_dims(slice_data, -1).astype(np.float32)
+                    for i in range(0, len(x), batch_size):
+                        yield (x[i:i + batch_size])
+    # while True:
+    #     for key in dict:
+    #         count = 0
+    #         data = []
+    #         patched_slices = []
+    #         for scan in dict[key]:
+    #             scan_data = nib.load(scan).get_data()
+    #             for slice in scan_data:
+    #                 scan_patches = extract_patches_2d(slice, (48, 31))
+    #                 patched_slices.extend(scan_patches)
+    #             patched_slices = np.expand_dims(patched_slices, axis=-1)
+    #             if count == 0:
+    #                 data = patched_slices
+    #                 count = count + 1
+    #             else:
+    #                 data = np.concatenate((data, patched_slices), axis=-1)
+    #             patched_slices = []
+    #         x = data.astype(np.float32)
+    #         for i in range(0, len(x), batch_size):
+    #             yield (x[i:i + batch_size])
 
 
 def prepare_label(input_batch):
@@ -179,7 +221,7 @@ def dense_crf(probs, img=None, n_iters=10, sxy_gaussian=(1, 1), compat_gaussian=
 
     d = dcrf.DenseCRF2D(w, h, n_classes)
     unaries = -np.log(probs)
-    unaries = unaries.reshap((n_classes, -1))
+    unaries = unaries.reshape((n_classes, -1))
     d.setUnaryEnergy(unaries)
     d.addPairwiseGaussian(sxy=sxy_gaussian, compat=compat_gaussian, kernel=kernel_gaussian, normalization=norm_gaussian)
     if img is not None:
