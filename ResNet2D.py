@@ -238,7 +238,7 @@ class ResnetBuilder(object):
                    strides=(1, 1), kernel_regularizer=l2(1e-4))(block)
         x = BatchNormalization(axis=CHANNEL_AXIS)(x)
         x = Activation("softmax")(x)
-        x = BilinearUpSampling2D(size=(24, 31))(x)
+        x = BilinearUpSampling2D(size=(30, 31))(x)
         # block_shape = K.int_shape(block)
         # pool2 = AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
         #                          strides=(1, 1))(block)
