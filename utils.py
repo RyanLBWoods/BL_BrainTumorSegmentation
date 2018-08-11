@@ -26,13 +26,14 @@ IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32
 min_max_scaler = preprocessing.MinMaxScaler()
 normalizer = preprocessing.Normalizer()
 
+
 def colormap():
-    map_list = ['#000000', '#FF0000']#, '#008B00', '#B0E2FF', '#FFFF00']
+    map_list = ['#000000', '#FF0000']  # , '#008B00', '#B0E2FF', '#FFFF00']
     return colors.ListedColormap(map_list, 'indexed')
 
 
 def pred_colormap():
-    map_list = ['#000000', '#B0E2FF']
+    map_list = ['#000000', '#FF0000']
     return colors.ListedColormap(map_list, 'indexed')
 
 
@@ -43,10 +44,16 @@ def plot(scans, segs):
         plt.show()
 
 
-# def extract_patches(a, patch_size):
-#     m, n = a.shape
-#     b0, b1 = patch_size
-#     return a.reshape(m // b0, b0, n // b1, b1).swapaxes(1, 2).reshape(-1, b0, b1)
+def extract_patches(img, patch_size):
+    m, n = img.shape
+    b0, b1 = patch_size
+    return img.reshape(m // b0, b0, n // b1, b1).swapaxes(1, 2).reshape(-1, b0, b1)
+
+
+def reconstruct_image(patch, img_size):
+    p_n, p_h, p_w = patch.shape
+    img_h, img_w = img_size
+    return patch.reshape(img_h // p_h, -1, p_h, p_w).swapaxes(1, 2).reshape(img_h, img_w)
 
 
 def dice_coef(y_true, y_pred, smooth=1):
@@ -116,70 +123,107 @@ def batch_generator(dict, batch_size, n_classes, label_class):
                 yield (x[j:j + batch_size], y[j:j + batch_size])
 
 
-def test_batch_generator(dict, batch_size):
-    # while True:
-    #     for key in dict:
-    #         # seg_data = nib.load(key).get_data()
-    #         # y = to_categorical(seg_data, n_classes)
-    #         x = []
-    #         for value in dict[key]:
-    #             if 'nii.gz' in value:
-    #                 slice_data = nib.load(value).get_data().astype(np.float32)
-    #                 for s in range(0, len(slice_data)):
-    #                     scaled = preprocessing.MinMaxScaler().fit_transform(slice_data[s])
-    #                     slice_data[s] = scaled
-    #                 x = np.expand_dims(slice_data, -1)
-    #         for i in range(0, len(x), batch_size):
-    #             yield (x[i:i + batch_size])
+def seg_patch_evaluate_batch_generator(dict, batch_size):
     while True:
         for key in dict:
             count = 0
             data = []
-            patched_slices = []
+            y = []
+            yt = []
             for scan in dict[key]:
-                scan_data = nib.load(scan).get_data().astype(np.float32)
-                for s in range(0, len(scan_data)):
-                    scaled = normalizer.fit_transform(scan_data[s])
-                    # scaled = min_max_scaler.fit_transform(scan_data[s])
-                    scan_data[s] = scaled
-                scan_data = np.expand_dims(scan_data, -1)
-                if count == 0:
-                    data = scan_data
-                    count = count + 1
-                else:
-                    data = np.concatenate((data, scan_data), axis=-1)
-            for i in range(0, len(data)):
-                x = extract_patches_2d(data[i], (48, 31))
-                for j in range(0, len(x), batch_size):
-                    yield (x[j:j + batch_size])
+                if '.json' in scan:
+                    with open(scan, 'r') as f:
+                        label = json.load(f)
+                        for k in label:
+                            slices = [s for (s, _) in label[k]]
+                            y = np.array(slices)
+                    for j in range(0, len(y)):
+                        patched_y = extract_patches(y[j], (48, 31))
+                        yt.extend(patched_y)
+                if '.json' not in scan:
+                    patched_slices = []
+                    scan_data = nib.load(scan).get_data().astype(np.float32)
+                    for s in range(0, len(scan_data)):
+                        scaled = normalizer.fit_transform(scan_data[s])
+                        scan_data[s] = scaled
+                    for scan in scan_data:
+                        patched_slices.extend(extract_patches(scan, (48, 31)))
+                    patched_slices = np.expand_dims(np.array(patched_slices), axis=-1)
+                    if count == 0:
+                        data = patched_slices
+                        count = count + 1
+                    else:
+                        data = np.concatenate((data, patched_slices), axis=-1)
+            yt = to_categorical(np.array(yt), 2)
+            for j in range(0, len(data), batch_size):
+                yield (data[j:j + batch_size], yt[j: j + batch_size])
 
 
-def prepare_label(input_batch):
-    """[285, 4, 240, 240, 155]
-       [48000, 240, 155, 1]
-    """
+def seg_evaluate_batch_generator(dict, batch_size):
+    while True:
+        for key in dict:
+            count = 0
+            data = []
+            y = []
+            yt = []
+            for scan in dict[key]:
+                if '.json' in scan:
+                    with open(scan, 'r') as f:
+                        label = json.load(f)
+                        for k in label:
+                            slices = [s for (s, _) in label[k]]
+                            y = np.array(slices)
+                if '.json' not in scan:
+                    scan_data = nib.load(scan).get_data().astype(np.float32)
+                    for s in range(0, len(scan_data)):
+                        scaled = normalizer.fit_transform(scan_data[s])
+                        # scaled = min_max_scaler.fit_transform(scan_data[s])
+                        scan_data[s] = scaled
+                    scan_data = np.expand_dims(scan_data, -1)
+                    if count == 0:
+                        data = scan_data
+                        count = count + 1
+                    else:
+                        data = np.concatenate((data, scan_data), axis=-1)
+            y = to_categorical(np.array(y), 2)
+            for j in range(0, len(data), batch_size):
+                yield (data[j:j + batch_size], y[j:j + batch_size])
 
-    with tf.name_scope('label_encode'):
-        input_batch = tf.squeeze(input_batch)
-        input_batch = tf.one_hot(input_batch, n_classes)
 
-    return input_batch
-
-
-def inverse_preprocess(imgs, num_images):
-    n, h, w, c = imgs.shape
-    assert (n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (
-        n, num_images)
-    outputs = np.zeros((num_images, h, w, 1), dtype=np.uint8)
-    for i in range(num_images):
-        outputs[i] = (imgs[i] + IMG_MEAN)[:, :, ::-1].astype(np.uint8)
-    return outputs
+def id_evaluate_batch_generator(dict, batch_size):
+    while True:
+        for key in dict:
+            count = 0
+            data = []
+            y = []
+            for scan in dict[key]:
+                if '.json' in scan:
+                    with open(scan, 'r') as f:
+                        label = json.load(f)
+                        for k in label:
+                            category = [c for (_, c) in label[k]]
+                            y = np.array(category)
+                if '.json' not in scan:
+                    scan_data = nib.load(scan).get_data().astype(np.float32)
+                    for s in range(0, len(scan_data)):
+                        scaled = normalizer.fit_transform(scan_data[s])
+                        # scaled = min_max_scaler.fit_transform(scan_data[s])
+                        scan_data[s] = scaled
+                    scan_data = np.expand_dims(scan_data, -1)
+                    if count == 0:
+                        data = scan_data
+                        count = count + 1
+                    else:
+                        data = np.concatenate((data, scan_data), axis=-1)
+            y = to_categorical(np.array(y), 2)
+            for j in range(0, len(data), batch_size):
+                yield (data[j:j + batch_size], y[j:j + batch_size])
 
 
 def dense_crf(probs, img=None, n_iters=10, sxy_gaussian=(1, 1), compat_gaussian=4, kernel_gaussian=dcrf.DIAG_KERNEL,
               norm_gaussian=dcrf.NORMALIZE_SYMMETRIC, sxy_bilateral=(49, 49), compat_bilateral=5,
               srgb_bilateral=(13, 13, 13), kernel_bilateral=dcrf.DIAG_KERNEL, norm_bilateral=dcrf.NORMALIZE_SYMMETRIC):
-    _, h, w, _ = probs.shape
+    _, h, w, n_classes = probs.shape
 
     probs = probs[0].transpose(2, 0, 1).copy(order='C')
 
