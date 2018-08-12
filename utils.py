@@ -139,23 +139,57 @@ def test_batch_generator(dict, batch_size):
                 #         yield (x[i:i + batch_size])
                 patched_slices = []
                 scan_data = nib.load(scan).get_data().astype(np.float32)
-                for s in range(0, len(scan_data)):
+                # for s in range(0, len(scan_data)):
                 #     scaled = normalizer.fit_transform(scan_data[s])
-                    scaled = min_max_scaler.fit_transform(scan_data[s])
-                    scan_data[s] = scaled
-                # scan_data = np.expand_dims(scan_data, -1)
-                for scan in scan_data:
-                    patched_slices.extend(extract_patches(scan, (48, 31)))
-                patched_slices = np.expand_dims(np.array(patched_slices), axis=-1)
+                #     scaled = min_max_scaler.fit_transform(scan_data[s])
+                #     scan_data[s] = scaled
+                scan_data = np.expand_dims(scan_data, -1)
+                # for scan in scan_data:
+                #     patched_slices.extend(extract_patches(scan, (48, 31)))
+                # patched_slices = np.expand_dims(np.array(patched_slices), axis=-1)
                 if count == 0:
-                    data = patched_slices
-                    # data = scan_data
+                    # data = patched_slices
+                    data = scan_data
                     count = count + 1
                 else:
-                    # data = np.concatenate((data, scan_data), axis=-1)
-                    data = np.concatenate((data, patched_slices), axis=-1)
+                    data = np.concatenate((data, scan_data), axis=-1)
+                    # data = np.concatenate((data, patched_slices), axis=-1)
             for i in range(0, len(data), batch_size):
                 yield data[i: i + batch_size]
+
+
+def no_norm_evaluate_generator(dict, batch_size):
+    while True:
+        for key in dict:
+            count = 0
+            data = []
+            y = []
+            # yt = []
+            for scan in dict[key]:
+                if '.json' in scan:
+                    with open(scan, 'r') as f:
+                        label = json.load(f)
+                        for k in label:
+                            slices = [s for (s, _) in label[k]]
+                            y = np.array(slices)
+                if '.json' not in scan:
+                    scan_data = nib.load(scan).get_data().astype(np.float32)
+                    # for s in range(0, len(scan_data)):
+                    #     scaled = normalizer.fit_transform(scan_data[s])
+                        # scaled = preprocessing.MinMaxScaler().fit_transform(scan_data[s])
+                        # scan_data[s] = scaled
+                    scan_data = np.expand_dims(scan_data, -1)
+                    if count == 0:
+                        data = scan_data
+                        count = count + 1
+                    else:
+                        data = np.concatenate((data, scan_data), axis=-1)
+            y = to_categorical(np.array(y), 2)
+            print(data.shape)
+            print(y.shape)
+            exit(0)
+            for j in range(0, len(data), batch_size):
+                yield (data[j:j + batch_size], y[j:j + batch_size])
 
 
 def seg_patch_evaluate_batch_generator(dict, batch_size):

@@ -7,6 +7,7 @@
 
 from keras.layers import Input, Conv2DTranspose, UpSampling2D, Dense
 from keras.models import load_model, Model
+from keras import optimizers
 from sklearn.feature_extraction.image import reconstruct_from_patches_2d
 from sklearn import preprocessing
 import load_data_2d
@@ -37,6 +38,7 @@ def get_arguments():
                         help='Number of batches of samples to yield from generator.')
     parser.add_argument("--label-class", type=str, default=LABEL_CLASS,
                         help="Which kind of classification. Whole tumor, tumor core or cystic")
+    parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE, help="Learning rate for training.")
 
     return parser.parse_args()
 
@@ -47,21 +49,32 @@ def main():
     print("Reading data...")
     scan_reader = ScanReader(args.data_dir)
     data_dict = scan_reader.mri_dic
+    adam = optimizers.Adam(lr=args.learning_rate, decay=0.0001)
+
     # model_path = 'wt_only_nb-01-0.10.hdf5'
     # model_path = 'wt_minmax-05-0.30.hdf5'
-    model_path = 'wt_l2-12-0.35.hdf5'
+    # model_path = 'wt_l2-12-0.35.hdf5'
     # model_path = 'wt_skpatches-02-0.42.hdf5'
     # model_path = 'wt_id-13-0.76.hdf5'
+    model_path = 'whole_tumor_label_only_adam.h5'
     print("Loading model...")
     trained_model = load_model(model_path,
                                custom_objects={'BilinearUpSampling2D': BilinearUpSampling2D,
                                                'dice_coef_loss': dice_coef_loss,
                                                'dice_coef': dice_coef})
+    weights = trained_model.get_weights()
+    model = ResnetBuilder.build_resnet_101((240, 155, 4), 2)
+    model.set_weights(weights)
+    model.compile(loss=dice_coef_loss, optimizer=adam, metrics=[dice_coef])
     print("Predicting...")
     # probs = trained_model.predict_generator(generator=test_batch_generator(d, args.batch_size), steps=24)
-    probs = trained_model.evaluate_generator(generator=seg_patch_evaluate_batch_generator(data_dict, args.batch_size), steps=24)
+    # probs = trained_model.evaluate_generator(generator=seg_patch_evaluate_batch_generator(data_dict, args.batch_size), steps=24)
+    probs = model.evaluate_generator(generator=no_norm_evaluate_generator(data_dict, args.batch_size), steps=14400/10)
+    with open('no_norm_eva.txt', 'w') as nf:
+        nf.write(probs)
     # exit(0)
     print(probs.shape)
+    exit(0)
     result = []
     for prob in range(0, len(probs)):
         probs[prob] = dense_crf(np.expand_dims(probs[prob], axis=0))
